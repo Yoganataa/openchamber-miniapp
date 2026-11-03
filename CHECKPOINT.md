@@ -16,12 +16,12 @@ Open PR: https://github.com/Yoganataa/openchamber-miniapp/pull/1 (draft)
 - The project is Node.js >=24.14.0 + npm only. The npm lockfile for browser dependencies was generated and committed by GitHub Actions at 176dfcafc8b4f8b84b0ec6b14be0715d63bb7ab3.
 - Latest root-path integration verification passed on commit d7a79b2e1bccf9af227f1f9d6348894a560fca52, run 41729605708: npm ci, Telegram host typecheck, and full Vite bundle all succeeded.
 - The official upstream Vite chunking strategy was adapted locally. In the passing build, Mermaid was 29.52 KB and MarkdownRendererImpl 95.23 KB; renderMobileApp remains 5.74 MB raw / 1.65 MB gzip, and heic2any is 1.35 MB raw / 341 KB gzip. Review real-world load performance without removing upstream functionality.
-- The current CI change (commit 2de967909ee042ca8463871e6a56707097324eb7) now runs build:miniapp:same-origin to verify the production /miniapp/ base path. Its workflow run must pass before this checkpoint is considered fully current.
+- The production /miniapp/ build passed on commit 2de967909ee042ca8463871e6a56707097324eb7, run 41729951658. The subsequent docs-only head 5550eee2e04a034035d470e079dff8fe8cb889a9 has the same implementation and its CI run is still completing.
 - npm ci reported 10 dependency audit findings (5 low, 4 high, 1 critical). Inspect the advisory tree before release; do not run npm audit fix --force.
 - Production must use the same scheme, host, and port as OpenChamber Server. The pinned server CORS policy does not allow arbitrary TGCloud static origins. TGCloud frontend static hosting is intentionally disabled; TGCloud remains available for optional backend modules.
 
 ## Active phase
-Phase 1 — Official mobile UI adoption. The renderer and Telegram host bridge are integrated, and root-path full build passed. Production /miniapp/ build and live Telegram runtime testing remain.
+Phase 1 — Official mobile UI adoption. The renderer and Telegram host bridge are integrated, and full Vite build and production /miniapp/ build both passed. Live Telegram runtime testing remains.
 
 ## Completed
 - React + TypeScript + Vite host scaffold.
@@ -37,7 +37,7 @@ Phase 1 — Official mobile UI adoption. The renderer and Telegram host bridge a
 - CI passed on d7a79b2 (run 41729605708) for npm ci, host typecheck, and root-path full Vite build.
 
 ## Remaining work
-1. Verify the current CI run passes build:miniapp:same-origin with the /miniapp/ base.
+1. Verify the docs-only head CI run completes successfully.
 2. Verify the deployed app on the same OpenChamber Server origin, including assets, login/pairing, API calls, streaming, WebSockets, and CSP embedding.
 3. Test official mobile workflows on Telegram Android, iOS, Desktop, Telegram Web, and browser fallback.
 4. Review npm audit advisories and bundle performance; do not remove upstream features to reduce size without an explicit product decision.
