@@ -13,18 +13,33 @@ Initial scaffold. This repository is a dedicated Telegram WebApp surface; it doe
 - OpenChamber Server remains the backend for sessions, OpenCode lifecycle, tools, filesystem, and Git operations.
 - Telegram Serverless is optional and should only host trusted, narrowly scoped backend operations after its current runtime contract is verified.
 
-## Development
+## Toolchain
 
-Requires Bun 1.4.4 and Node.js 24.14+.
+Use **Node.js 24.14+ and npm** for this repository. Bun is not part of the project toolchain.
+
+Install dependencies and run the frontend:
 
 ```bash
-bun install
-bun run dev
-bun run typecheck
-bun run build
+npm install
+npm run dev
+npm run typecheck
+npm run build
 ```
 
 Copy `.env.example` to `.env.local` and set `VITE_OPENCHAMBER_SERVER_URL` when connecting to a server.
+
+## Telegram Serverless setup
+
+From the repository root, initialize the official Telegram Serverless scaffold in the existing project:
+
+```bash
+npm create @tgcloud/bot .
+npx tgcloud login
+npx tgcloud status
+npx tgcloud diff
+```
+
+Enter the CLI Access Token only in the local CLI prompt. Do not paste it into chat or commit it. The `.tgcloud/` directory is git-ignored.
 
 ## Security
 
