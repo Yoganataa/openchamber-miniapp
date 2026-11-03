@@ -31,7 +31,7 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Audit upstream origin/CORS and browser API boot contract at pinned revision.
 - [ ] Verify upstream OpenChamber pairing/login in Telegram WebView.
 - [ ] Confirm theme/viewport behavior after mount, including keyboard resize.
-- [ ] Add BotFather setup, menu button, and launch/deep-link documentation.
+- [x] Document BotFather Main Mini App, chat menu button, and direct-link setup in README and deployment guide.
 - [ ] Validate Telegram initData server-side if it is used for identity mapping or authorization.
 - [ ] Add API contract and Telegram host integration tests.
 
