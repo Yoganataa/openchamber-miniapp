@@ -1,16 +1,19 @@
-import { existsSync, lstatSync, mkdirSync, realpathSync, symlinkSync } from 'node:fs';
+import { existsSync, lstatSync, realpathSync, symlinkSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const modules = path.join(root, 'node_modules');
+const uiSource = path.join(root, 'vendor/openchamber/packages/ui/src');
 const uiModules = path.join(root, 'vendor/openchamber/packages/ui/node_modules');
+
+if (!existsSync(uiSource)) {
+  throw new Error('Pinned upstream source is missing. Run git submodule update --init --recursive.');
+}
 
 if (!existsSync(modules)) {
   throw new Error('Root node_modules is missing; run npm install first.');
 }
-
-mkdirSync(path.dirname(uiModules), { recursive: true });
 
 if (existsSync(uiModules)) {
   const stats = lstatSync(uiModules);
