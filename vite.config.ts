@@ -42,6 +42,47 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       external: ['node:child_process', 'node:fs', 'node:path', 'node:url', 'node:os'],
+      output: {
+        // Keep the mobile entry and dynamically loaded feature dependencies
+        // split as upstream expects. In particular, do not pull Shiki grammars,
+        // diff highlights, or syntax modes into the eager renderer bundle.
+        manualChunks(id) {
+          if (id.includes('vite/preload-helper') || id.includes('vite/modulepreload-polyfill')) {
+            return 'vendor-vite-runtime';
+          }
+          if (!id.includes('node_modules')) return undefined;
+          if (id.endsWith('.css')) return undefined;
+
+          const lastNodeModules = id.lastIndexOf('node_modules/');
+          const match = id.slice(lastNodeModules + 'node_modules/'.length);
+          if (!match) return undefined;
+
+          const segments = match.split('/');
+          const packageName = match.startsWith('@')
+            ? `${segments[0]}/${segments[1]}`
+            : segments[0];
+
+          if (
+            packageName === '@shikijs/langs' ||
+            packageName === '@shikijs/themes' ||
+            packageName === '@codemirror/legacy-modes' ||
+            packageName === '@pierre/diffs' ||
+            packageName === '@pierre/highlights'
+          ) {
+            return undefined;
+          }
+
+          if (packageName === 'react' || packageName === 'react-dom') return 'vendor-react';
+          if (packageName === 'zustand' || packageName === 'zustand/middleware') return 'vendor-zustand';
+          if (packageName === '@opencode/client') return 'vendor-opencode-client';
+          if (packageName.includes('remark') || packageName.includes('rehype') || packageName === 'react-markdown') return 'vendor-markdown';
+          if (packageName === '@base-ui/react' || packageName.startsWith('@base-ui')) return 'vendor-base-ui';
+
+          const sanitized = packageName.replace(/^@/, '').replace(/\\//g, '-');
+          return `vendor-${sanitized}`;
+        },
+      },
     },
+
   },
 });
