@@ -1,26 +1,24 @@
 # OpenChamber Mini App
 
-Telegram Mini App client for [OpenChamber](https://github.com/openchamber/openchamber).
+Telegram Mini App client that runs the **official OpenChamber mobile UI**, sourced directly from the pinned upstream repository.
 
-## Product direction
+## UI source of truth
 
-The client UI must stay 1:1 with OpenChamber's official mobile surface. The upstream repository is pinned under `vendor/openchamber`; use its mobile renderer instead of implementing a parallel UI. See [Upstream UI Integration](docs/UPSTREAM-INTEGRATION.md) for the source pin and integration boundaries.
+The app loads upstream `packages/web/src/mobile-main.tsx`, which initializes the official browser runtime and calls `renderMobileApp` / `MobileApp`. The upstream mobile UI is not reimplemented locally.
 
-The source is pinned, but the official renderer has not yet replaced the initial local scaffold. The Mini App is not yet feature-complete.
+Upstream is pinned as the `vendor/openchamber` Git submodule. See [Upstream Integration](docs/UPSTREAM-INTEGRATION.md) for the pinned commit and integration boundaries.
 
 ## Architecture
 
-- React + TypeScript + Vite frontend hosted as a Telegram Mini App.
-- The official OpenChamber mobile UI is the UI source of truth.
-- Telegram WebApp APIs remain isolated behind a local host adapter.
-- OpenChamber Server remains the privileged backend for sessions, OpenCode lifecycle, tools, filesystem, and Git operations.
-- Telegram Serverless may host trusted, narrowly scoped backend operations only after its runtime and authorization contract is verified.
+- React + TypeScript + Vite host.
+- Official OpenChamber mobile renderer, browser API implementation, and styles from the pinned submodule.
+- Local Telegram adapter for lifecycle, viewport/theme events, and Telegram BackButton integration.
+- OpenChamber Server remains the privileged runtime for sessions, OpenCode, tools, filesystem, and Git.
+- Telegram Serverless is retained for optional trusted backend modules; it does not replace OpenChamber Server.
 
 ## Toolchain
 
-Use **Node.js 24.14+ and npm** consistently for this repository.
-
-Clone with the pinned upstream source:
+Use **Node.js 24.14+ and npm** only.
 
 ```bash
 git clone --recurse-submodules https://github.com/Yoganataa/openchamber-miniapp.git
@@ -31,32 +29,52 @@ npm run typecheck
 npm run build
 ```
 
-For an existing checkout, initialize the submodule before working:
+For an existing clone:
 
 ```bash
 git submodule update --init --recursive
 ```
 
-Copy `.env.example` to `.env.local` and set `VITE_OPENCHAMBER_SERVER_URL` when connecting to a server. Do not put access tokens, bot tokens, or passwords in `VITE_*` variables.
+Set `VITE_OPENCHAMBER_SERVER_URL` to the public HTTPS origin of your OpenChamber Server. This is a public URL, not a credential. Never put tokens, passwords, or bot credentials in `VITE_*` variables.
 
-## Telegram Serverless setup
+## Production hosting
 
-From the repository root, initialize the official Telegram Serverless scaffold in the existing project:
+The pinned OpenChamber Server allows same-origin browser calls and a narrow set of packaged client origins; it does not provide a general Telegram Mini App CORS allowlist. TGCloud static hosting serves a Mini App at `https://app<app_id>.tgcloud.ai/`, a different origin from an independently hosted OpenChamber Server. Do not use the TGCloud static hostname for this frontend and expect upstream API, pairing, streaming, and WebSocket calls to work cross-origin.
+
+Serve the Mini App on the **same scheme, hostname, and port** as OpenChamber Server under a path such as `/miniapp/`. Set `VITE_OPENCHAMBER_SERVER_URL` to that same origin and build with:
+
+```bash
+npm run build:miniapp:same-origin
+```
+
+This sets Vite's base to `/miniapp/`. Deploy the resulting `dist/` contents to the static path on the same host, then set the Telegram Mini App URL in BotFather to:
+
+```
+https://openchamber.example.com/miniapp/
+```
+
+Replace the example hostname with your actual public origin. See [Deployment](docs/DEPLOYMENT.md) for the reverse-proxy layout and CSP considerations.
+
+## Telegram Serverless
+
+The `tgcloud/` directory is for optional trusted backend modules. `npm run deploy` deploys only `tgcloud/`; it does not upload the frontend to TGCloud's separate static hostname.
 
 ```bash
 npm create @tgcloud/bot .
 npx tgcloud login
 npx tgcloud status
 npx tgcloud diff
+npm run deploy
 ```
 
 Enter the CLI Access Token only in the local CLI prompt. Do not paste it into chat or commit it. The `.tgcloud/` directory is git-ignored.
 
 ## Security
 
-- Validate Telegram `initData` on a trusted backend. Never authenticate using `initDataUnsafe`.
-- Never expose Telegram bot tokens or OpenChamber credentials in frontend code or `VITE_*` variables.
-- Require HTTPS in production.
-- Telegram identity does not automatically authorize access to an OpenChamber server.
+- Never authenticate using Telegram `initDataUnsafe`.
+- Validate Telegram `initData` on a trusted backend before using Telegram identity for authorization or account mapping.
+- OpenChamber authentication/pairing remains independently required.
+- Do not expose OpenChamber tokens, Telegram bot tokens, or CLI Access Tokens in frontend code, URLs, logs, or `VITE_*` variables.
+- Use HTTPS in production.
 
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md), [UPSTREAM-INTEGRATION.md](docs/UPSTREAM-INTEGRATION.md), and [ROADMAP.md](ROADMAP.md).
+See [Architecture](docs/ARCHITECTURE.md), [Upstream Integration](docs/UPSTREAM-INTEGRATION.md), [Deployment](docs/DEPLOYMENT.md), and [Roadmap](ROADMAP.md).
