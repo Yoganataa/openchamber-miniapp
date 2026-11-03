@@ -15,15 +15,16 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@/*": ["./vendor/openchamber/packages/ui/src/*"],
-      "@openchamber/ui/*": ["./vendor/openchamber/packages/ui/src/*"],
-      "@openchamber/sdk": ["./vendor/openchamber/packages/sdk/src/index.ts"],
-      "@openchamber/sdk/ui": ["./vendor/openchamber/packages/sdk/src/ui/index.ts"],
-      "@openchamber/sdk/schemas": ["./vendor/openchamber/packages/sdk/src/schemas.ts"],
-      "@web/*": ["./vendor/openchamber/packages/web/src/*"]
-    },
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "vite.config.ts"]
+  "include": [
+    "src/main.tsx",
+    "src/lib/config.ts",
+    "src/lib/telegram/client.ts",
+    "src/lib/telegram/types.ts",
+    "src/lib/openchamber/globals.d.ts",
+    "src/lib/openchamber/upstream.d.ts",
+    "src/vite/telegram-back-button-plugin.ts",
+    "vite.config.ts"
+  ]
 }
