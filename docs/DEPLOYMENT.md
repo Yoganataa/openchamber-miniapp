@@ -29,7 +29,7 @@ npm ci
 npm run build:miniapp:same-origin
 ```
 
-The script sets `VITE_BASE_PATH=/miniapp/` and runs the normal typecheck plus Vite build. Copy the contents of `dist/` to the static directory mounted at `/miniapp/`. For example, copy `dist/` into `/srv/openchamber/miniapp/`.
+The script sets Vite's base to `/miniapp/` and runs the host typecheck plus Vite build. Copy the contents of `dist/` to the static directory mounted at `/miniapp/`. For example, copy `dist/` into `/srv/openchamber/miniapp/`.
 
 Set the Telegram Mini App URL in BotFather to the same-origin URL. The URL path must match the Vite base path.
 
@@ -42,27 +42,52 @@ location ^~ /miniapp/ {
     root /srv/openchamber;
     try_files $uri $uri/ /miniapp/index.html;
 
-    # Telegram Web embeds Mini Apps in a web container. Keep this list narrow
-    # and include the actual Telegram Web parent origin used by your clients.
+    # Keep Telegram Web frame ancestors narrow and verify the origins used
+    # by the Telegram clients you support.
     add_header Content-Security-Policy "frame-ancestors 'self' https://web.telegram.org" always;
 }
 ```
 
-If your Telegram Web client uses another official parent origin, add that exact origin after verifying it. Do not use `*`. This CSP header is for the static Mini App document; do not overwrite CSP on the OpenChamber API routes.
+Do not use `*` in `frame-ancestors`. This CSP header is for the static Mini App document; do not overwrite CSP on OpenChamber API routes. Set a no-cache policy for `/miniapp/index.html` and long-lived immutable caching for hashed `/miniapp/assets/*` if your deployment already manages cache headers.
 
-Set a no-cache policy for `/miniapp/index.html` and long-lived immutable caching for hashed `/miniapp/assets/*` if your deployment already manages cache headers.
+## Telegram Serverless backend deployment
 
-## Telegram Serverless
+The repository's `tgcloud.jsonc` intentionally does not configure a static Mini App folder. The frontend is hosted beside OpenChamber Server to satisfy upstream CORS policy. The GitHub Actions deploy workflow **does not publish the frontend** to TGCloud's separate static hostname.
 
-The repository's `tgcloud.jsonc` intentionally does not configure a static Mini App folder. The frontend is deployed beside OpenChamber Server to satisfy upstream origin policy.
-
-Optional Telegram Serverless modules remain under `tgcloud/`. Deploy only those modules with:
+The optional Telegram Serverless backend modules live under `tgcloud/`. Local deployment:
 
 ```bash
+npm ci
+npx tgcloud login
 npm run deploy
 ```
 
-That command targets `tgcloud/` only; it does not upload the frontend to TGCloud static hosting. Keep the scaffold echo handler out of production until it has been reviewed and replaced.
+The local deploy script runs `npx tgcloud fetch` first, then `npx tgcloud push tgcloud/`. Fetching first updates the CLI's view of the deployed revision. The targeted push deploys changes under `tgcloud/` without overwriting unrelated remote modules. It does not use `--force`.
+
+### GitHub Actions auto-deploy
+
+`.github/workflows/deploy-tgcloud.yml` runs only on `main` when backend source/configuration, the npm manifest/lockfile, or the deployment workflow changes. It also supports manual dispatch, but the job is restricted to `main`.
+
+Create a repository Actions secret with this exact name:
+
+```text
+TGCLOUD_TOKEN
+```
+
+Its value must be the **Telegram Serverless CLI Access Token** from BotFather → your bot → Serverless → CLI Access → Access token. This is distinct from the Telegram Bot API token. The CLI reads `TGCLOUD_TOKEN` directly in CI and does not write the value into `.tgcloud/credentials` or the repository. The workflow passes it only to the deployment step.
+
+Before pushing, the workflow runs `npm ci`, `npm run typecheck`, and `npm run build:miniapp:same-origin`. The deploy step then runs:
+
+```bash
+npx tgcloud fetch
+npx tgcloud push tgcloud/
+```
+
+TGCloud's optimistic revision check prevents a stale CI run from silently overwriting a deployment made elsewhere. The workflow does not use `--force`.
+
+**Database migrations are not automatic.** TGCloud `push` registers schema changes but never applies them. Review any proposed migration and run `npx tgcloud migrate` deliberately when an actual schema change is introduced.
+
+The starter `tgcloud/handlers/message.js` echo handler has been removed. No chat message handler is currently active, so deploying this project will not unexpectedly echo users' messages. Add a real `/start` or message handler only when its intended product behavior is implemented.
 
 ## Verification checklist
 
@@ -72,3 +97,5 @@ That command targets `tgcloud/` only; it does not upload the frontend to TGCloud
 - [ ] Chat streaming and WebSocket upgrades succeed through the same-origin reverse proxy.
 - [ ] Telegram Web embedding works with a narrowly scoped CSP `frame-ancestors` policy.
 - [ ] Telegram Android, iOS, Desktop, and Telegram Web are tested separately.
+- [ ] The repository Actions secret is named `TGCLOUD_TOKEN` and the first main-branch TGCloud deployment succeeds.
+- [ ] Check `npx tgcloud webhook` after changing the deployed handlers; run `npx tgcloud webhook sync` only when the reported state is out of sync and the change is intended.
