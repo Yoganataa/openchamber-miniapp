@@ -20,6 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref || github.ref_name }}
           submodules: recursive
 
       - name: Set up Node.js
@@ -40,7 +41,7 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "build: update npm lockfile"
-            git push
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
           fi
 
       - name: Install dependencies
