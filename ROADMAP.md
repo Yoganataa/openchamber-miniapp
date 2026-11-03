@@ -44,11 +44,13 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [ ] Define fallbacks for WebView/browser capabilities unavailable in Telegram.
 
 ## Phase 4 — Telegram Serverless (optional backend)
-- [x] Add TGCloud project config, starter schema/handler, and SDK reference.
+- [x] Add TGCloud project config, schema, and SDK reference.
+- [x] Remove the unused starter echo handler so the first automated deployment does not echo users' messages.
 - [x] Disable separate-origin TGCloud static frontend hosting; use same-origin hosting with OpenChamber Server.
 - [x] Add GitHub Actions auto-deploy on main for `tgcloud/` backend changes using `TGCLOUD_TOKEN`; fetch remote revision first and push only tracked backend files.
+- [x] Keep database migrations out of the unattended deployment workflow.
 - [ ] Verify linked-bot eligibility, SDK runtime, quotas, and deployment flow on the user's actual bot.
-- [ ] Review/replace scaffold echo handler before production.
+- [x] Remove the scaffold echo handler before production so no unintended message-response behavior is deployed. Add handlers only with defined product behavior.
 - [ ] Add threat model and data-retention policy.
 - [ ] Add initData-verified endpoints only if a real backend identity-mapping requirement exists.
 - [ ] Add a narrow authenticated relay only if upstream server features require one and no same-origin route exists.
