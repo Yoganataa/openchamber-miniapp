@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -31,12 +31,17 @@ jobs:
       - name: Generate npm lockfile
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
-      - name: Upload generated lockfile
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-npm-lockfile
-          path: package-lock.json
-          if-no-files-found: error
+      - name: Commit generated npm lockfile
+        run: |
+          git add package-lock.json
+          if git diff --cached --quiet; then
+            echo "package-lock.json is already synchronized."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "build: update npm lockfile"
+            git push
+          fi
 
       - name: Install dependencies
         run: npm ci

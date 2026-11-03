@@ -2,11 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -19,34 +15,15 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "vendor/openchamber/packages/ui/src/*"
-      ],
-      "@openchamber/ui/*": [
-        "vendor/openchamber/packages/ui/src/*"
-      ],
-      "@openchamber/sdk": [
-        "vendor/openchamber/packages/sdk/src/index.ts"
-      ],
-      "@openchamber/sdk/ui": [
-        "vendor/openchamber/packages/sdk/src/ui/index.ts"
-      ],
-      "@openchamber/sdk/schemas": [
-        "vendor/openchamber/packages/sdk/src/schemas.ts"
-      ],
-      "@web/*": [
-        "vendor/openchamber/packages/web/src/*"
-      ]
+      "@/*": ["./vendor/openchamber/packages/ui/src/*"],
+      "@openchamber/ui/*": ["./vendor/openchamber/packages/ui/src/*"],
+      "@openchamber/sdk": ["./vendor/openchamber/packages/sdk/src/index.ts"],
+      "@openchamber/sdk/ui": ["./vendor/openchamber/packages/sdk/src/ui/index.ts"],
+      "@openchamber/sdk/schemas": ["./vendor/openchamber/packages/sdk/src/schemas.ts"],
+      "@web/*": ["./vendor/openchamber/packages/web/src/*"]
     },
-    "types": [
-      "vite/client",
-      "node"
-    ]
+    "types": ["vite/client", "node"]
   },
-  "include": [
-    "src",
-    "vite.config.ts"
-  ]
+  "include": ["src", "vite.config.ts"]
 }

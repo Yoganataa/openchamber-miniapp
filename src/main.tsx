@@ -48,19 +48,7 @@ async function start() {
     telegram.onEvent?.('themeChanged', () => {
       document.documentElement.style.colorScheme = telegram.colorScheme;
     });
-
-    const handleBack = async () => {
-      const { closeTopmostBackLayer } = await import('@openchamber/ui/lib/mobileBackLayers');
-      if (closeTopmostBackLayer()) return;
-      if (window.history.length > 1) {
-        window.history.back();
-        return;
-      }
-      telegram.close();
-    };
-
-    telegram.BackButton?.onClick(() => void handleBack());
-    telegram.BackButton?.show();
+    telegram.BackButton?.hide();
   }
 
   if (!config.openChamberServerUrl) {

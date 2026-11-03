@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
+import { telegramBackButtonPlugin } from './src/vite/telegram-back-button-plugin';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const upstream = path.resolve(root, 'vendor/openchamber/packages');
@@ -11,7 +12,7 @@ const web = path.join(upstream, 'web/src');
 const sdk = path.join(upstream, 'sdk/src');
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [telegramBackButtonPlugin(), react()],
   resolve: {
     alias: [
       { find: '@openchamber/sdk/schemas', replacement: path.join(sdk, 'schemas.ts') },
