@@ -15,12 +15,12 @@ Initial scaffold. This repository is a dedicated Telegram WebApp surface; it doe
 
 ## Toolchain
 
-Use **Node.js 24.14+ and npm** for this repository. Bun is not part of the project toolchain.
+Use **Node.js 24.14+ and npm** consistently for this repository.
 
-Install dependencies and run the frontend:
+Install the exact dependency tree from `package-lock.json` and run the frontend:
 
 ```bash
-npm install
+npm ci
 npm run dev
 npm run typecheck
 npm run build
