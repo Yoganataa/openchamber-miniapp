@@ -4,19 +4,20 @@ Last audited: 2026-11-04
 Repository: https://github.com/Yoganataa/openchamber-miniapp
 Default branch: main
 Working branch: feat/upstream-openchamber-mobile-ui
+Open PR: https://github.com/Yoganataa/openchamber-miniapp/pull/1 (draft)
 
 ## Current state
-- Base branch main at `c98ea591c5c3eb270eac49dd8d0b79156910f776` when this continuation began.
-- No pre-existing open PRs were returned at the start of this continuation.
-- This branch pins official upstream source `openchamber/openchamber` at `1e74724fc04026e3666f0802a6040f0f24c74226` in `vendor/openchamber`.
-- The upstream source revision is version 2.6.0. It includes the official mobile renderer at `packages/ui/src/apps/renderMobileApp.tsx` and `MobileApp.tsx`, with its browser entry and runtime API adapter under `packages/web/src/`.
+- Base branch main was at `c98ea591c5c3eb270eac49dd8d0b79156910f776` when this continuation began.
+- PR #1 pins official upstream source `openchamber/openchamber` at `1e74724fc04026e3666f0802a6040f0f24c74226` in `vendor/openchamber`.
+- The upstream source revision is application version 2.6.0. It includes the official mobile renderer at `packages/ui/src/apps/renderMobileApp.tsx` and `MobileApp.tsx`, with the browser entry and runtime API adapter under `packages/web/src/`.
+- The PR also documents the 1:1 product rule and configures CI to checkout recursive submodules.
+- GitHub Actions run `41726418174` for PR #1 completed successfully. The job passed checkout (including submodule initialization), Node setup, `npm ci`, `npm run typecheck`, and `npm run build`.
+- Phase 0 is complete on the current PR branch. Reconfirm the main-branch status after merge.
 - The upstream renderer has **not yet been wired into this repository's Vite entry point**. The app currently still displays the local scaffold. Do not claim UI parity is complete.
 - Upstream uses Bun workspaces, but this repository remains Node.js >=24.14.0 + npm only. No Bun commands or lockfiles are added.
-- CI checkout now initializes recursive submodules. The existing npm ci, typecheck, and build checks still need a successful workflow run before Phase 0 can be closed.
-- No successful local or remote typecheck/build result has been established in this continuation.
 
 ## Active phase
-Phase 0 — Foundation (CI verification outstanding), with the upstream source pin established as groundwork for Phase 1.
+Phase 1 — Official mobile UI adoption.
 
 ## Completed and present
 - React + TypeScript + Vite scaffold.
@@ -28,18 +29,19 @@ Phase 0 — Foundation (CI verification outstanding), with the upstream source p
 - npm scripts for development, typecheck, build, and build-then-deploy.
 - Official OpenChamber source pinned as a Git submodule at `1e74724fc04026e3666f0802a6040f0f24c74226`.
 - Upstream integration boundaries documented in `docs/UPSTREAM-INTEGRATION.md`.
-- GitHub Actions checks out recursive submodules and runs npm ci, npm run typecheck, and npm run build.
+- GitHub Actions checks out recursive submodules.
+- CI verification passed on PR #1, run `41726418174`.
 
 ## Remaining work
-1. Verify CI with the submodule checkout change.
-2. Wire the official OpenChamber mobile renderer into the Vite entry point using npm-compatible dependency resolution.
-3. Reuse the official mobile browser runtime/API adapter; audit authentication and CORS requirements at the pinned upstream revision.
+1. Finish review and merge PR #1; do not create a second PR while #1 remains open.
+2. Replace the local placeholder screen with upstream `renderMobileApp` / `MobileApp`, using the upstream browser mobile entry and required assets/styles.
+3. Reuse the official browser runtime/API adapter and audit authentication/CORS requirements at the pinned upstream revision.
 4. Integrate Telegram lifecycle, theme, viewport, and BackButton with the upstream mobile app.
 5. Review/replace the Telegram Serverless scaffold echo handler before any production deployment.
 
 ## Important implementation notes
 - The desired UI source of truth is upstream OpenChamber's mobile renderer, not a local recreation and not its desktop shell.
-- The upstream package workspace and lockfile use Bun. Do not run upstream Bun scripts or import its Bun lockfile. Resolve the required source dependencies via this repository's npm manifest and committed npm lockfile.
+- The upstream package workspace and lockfile use Bun. Do not run upstream Bun scripts or import its Bun lockfile. Resolve required dependencies via this repository's npm manifest and committed npm lockfile.
 - Preserve the upstream submodule contents unchanged. Put Telegram-specific integration in this repository.
 - `tgcloud.jsonc` publishes Vite's `dist` directory as the Mini App static site.
 - Telegram Serverless modules execute in Telegram's isolated runtime, not ordinary Node.js. Only the platform SDK and project modules under `tgcloud/` are available there; do not import frontend code or arbitrary npm packages into those modules.
