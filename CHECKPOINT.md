@@ -50,7 +50,9 @@ Phase 1 — Official mobile UI adoption. The renderer and Telegram host bridge a
 - The upstream monorepo uses Bun, but this repository must not run Bun or add a Bun lockfile.
 - npm run typecheck checks locally owned Telegram/Vite host glue; Vite build bundles the full upstream renderer and runtime.
 - npm run build:miniapp:same-origin builds for /miniapp/.
-- npm run deploy deploys only tgcloud/ backend modules, not the frontend.
+- npm run deploy fetches the current TGCloud revision and pushes only tgcloud/ backend modules, not the frontend.
+- Automatic deployment runs only on main and only when tgcloud source/config, package manifest/lock, or the deploy workflow changes. Required repository secret: TGCLOUD_TOKEN.
+- Database migrations are never run automatically; review and apply schema changes separately.
 - Upstream CORS accepts same-origin plus packaged/local-dev origins. OPENCHAMBER_FRAME_ANCESTORS controls CSP framing only; it is not a CORS allowlist.
 - Telegram Serverless modules run in Telegram's isolated V8 runtime, not ordinary Node.js.
 - tgcloud/handlers/message.js is still the scaffold echo handler; do not deploy it to production before review/replacement.

@@ -46,7 +46,8 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 ## Phase 4 — Telegram Serverless (optional backend)
 - [x] Add TGCloud project config, starter schema/handler, and SDK reference.
 - [x] Disable separate-origin TGCloud static frontend hosting; use same-origin hosting with OpenChamber Server.
-- [ ] Verify linked-bot eligibility, SDK runtime, quotas, and deployment flow.
+- [x] Add GitHub Actions auto-deploy on main for `tgcloud/` backend changes using `TGCLOUD_TOKEN`; fetch remote revision first and push only tracked backend files.
+- [ ] Verify linked-bot eligibility, SDK runtime, quotas, and deployment flow on the user's actual bot.
 - [ ] Review/replace scaffold echo handler before production.
 - [ ] Add threat model and data-retention policy.
 - [ ] Add initData-verified endpoints only if a real backend identity-mapping requirement exists.

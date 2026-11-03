@@ -57,7 +57,9 @@ Replace the example hostname with your actual public origin. See [Deployment](do
 
 ## Telegram Serverless
 
-The `tgcloud/` directory is for optional trusted backend modules. `npm run deploy` deploys only `tgcloud/`; it does not upload the frontend to TGCloud's separate static hostname.
+The `tgcloud/` directory is for optional trusted backend modules. `npm run deploy` first fetches the current cloud revision, then pushes only tracked `tgcloud/` modules. It does not upload the frontend to TGCloud's separate static hostname.
+
+GitHub Actions automatically deploys backend-module changes after they reach `main`. Add a repository Actions secret named `TGCLOUD_TOKEN` containing the CLI Access Token from BotFather → your bot → Serverless → CLI Access. This is **not** the Telegram Bot API token. The workflow validates the Mini App build, fetches the remote deployment state, and then pushes `tgcloud/`. It never runs database migrations automatically.
 
 ```bash
 npm create @tgcloud/bot .
