@@ -41,8 +41,8 @@ Phase 1 — Official mobile UI adoption. The renderer and Telegram host bridge a
 2. Verify the deployed app on the same OpenChamber Server origin, including assets, login/pairing, API calls, streaming, WebSockets, and CSP embedding.
 3. Test official mobile workflows on Telegram Android, iOS, Desktop, Telegram Web, and browser fallback.
 4. Review npm audit advisories and bundle performance; do not remove upstream features to reduce size without an explicit product decision.
-5. Complete BotFather launch/menu docs and review/replace the Telegram Serverless echo handler before any production backend deployment.
-6. Verify PR CI for the new deployment workflow and confirm the repo Actions secret is named exactly TGCLOUD_TOKEN.
+5. Complete BotFather launch/menu docs and implement real bot handlers only after their product behavior is defined.
+6. Verify PR CI for the new deployment workflow and confirm the repository Actions secret is named exactly TGCLOUD_TOKEN.
 7. After PR #1 is merged to main, verify the first TGCloud deployment run and inspect the bot's deployed modules/webhook state.
 8. Finish live Telegram/OpenChamber runtime testing; do not open another PR while #1 remains open.
 
@@ -56,10 +56,9 @@ Phase 1 — Official mobile UI adoption. The renderer and Telegram host bridge a
 - Automatic deployment runs only on main and only when tgcloud source/config, package manifest/lock, or the deploy workflow changes. Required repository Actions secret: TGCLOUD_TOKEN (the Telegram Serverless CLI Access Token, not the Bot API token).
 - The deployment job runs npm ci, host typecheck, the /miniapp/ production build, then `npx tgcloud fetch` and targeted `npx tgcloud push tgcloud/`. It never uses --force.
 - TGCloud database migrations are not automated. Review migration output and apply separately if a future schema change requires it.
-- Database migrations are never run automatically; review and apply schema changes separately.
 - Upstream CORS accepts same-origin plus packaged/local-dev origins. OPENCHAMBER_FRAME_ANCESTORS controls CSP framing only; it is not a CORS allowlist.
 - Telegram Serverless modules run in Telegram's isolated V8 runtime, not ordinary Node.js.
-- tgcloud/handlers/message.js is still the scaffold echo handler; do not deploy it to production before review/replacement.
+- The scaffold echo handler tgcloud/handlers/message.js has been deleted. No chat message handler is active; add a real /start or message handler only after its product behavior is defined.
 - Never commit CLI credentials. Any CLI Access Token previously pasted into chat must be treated as compromised and revoked; authenticate locally with a newly issued token.
 
 ## Working rules
