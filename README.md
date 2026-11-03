@@ -55,6 +55,16 @@ https://openchamber.example.com/miniapp/
 
 Replace the example hostname with your actual public origin. See [Deployment](docs/DEPLOYMENT.md) for the reverse-proxy layout and CSP considerations.
 
+## BotFather setup
+
+After deploying the frontend at the same-origin `/miniapp/` URL, configure the bot in [@BotFather](https://t.me/BotFather):
+
+- For the profile's **Launch app** entry, use `/mybots → select bot → Bot Settings → Configure Mini App` and enable/configure the Main Mini App URL.
+- For a persistent chat entry point, use `/setmenubutton` (or **Bot Settings → Menu Button**), set a label such as `OpenChamber`, and enter the same URL.
+- The Main Mini App also supports a direct link in the form `https://t.me/<bot_username>?startapp`.
+
+Both launch surfaces must point to the same-origin URL, for example `https://openchamber.example.com/miniapp/`. See [Deployment](docs/DEPLOYMENT.md#configure-the-telegram-bot) for the launch smoke-test checklist and security boundary.
+
 ## Telegram Serverless
 
 The `tgcloud/` directory is for optional trusted backend modules. `npm run deploy` first fetches the current cloud revision, then pushes only tracked `tgcloud/` modules. It does not upload the frontend to TGCloud's separate static hostname.
