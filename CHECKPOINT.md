@@ -7,56 +7,60 @@ Working branch: feat/upstream-openchamber-mobile-ui
 Open PR: https://github.com/Yoganataa/openchamber-miniapp/pull/1 (draft)
 
 ## Current state
-- PR #1 pins official upstream OpenChamber at commit 1e74724fc04026e3666f0802a6040f0f24c74226 (application version 2.6.0) as vendor/openchamber.
-- The root app imports upstream packages/web/src/mobile-main.tsx. That entry initializes upstream browser RuntimeAPIs and renders the official renderMobileApp / MobileApp.
-- Local Telegram glue initializes the WebApp, provides viewport/theme host state, sets the public OpenChamber API origin, and bridges Telegram BackButton to the upstream handleNativeBack callback through a guarded Vite transform.
-- Upstream source inside vendor/openchamber remains unchanged.
-- Repository uses Node.js >=24.14.0 + npm only. The upstream dependency package-lock was generated and committed by GitHub Actions at 176dfcafc8b4f8b84b0ec6b14be0715d63bb7ab3.
-- Latest integration CI before the worker-format fix: npm ci passed and npm run typecheck passed, but Vite build failed because the diff worker inherited IIFE format while using code splitting.
-- Vite worker.format was set to es in commit 982b8a22c715607398f8a22511285a75596c0480. A new green CI run is still required.
+- The root app now loads the official OpenChamber mobile app from the pinned submodule, not a locally recreated interface.
+- Upstream is pinned in vendor/openchamber at commit 1e74724fc04026e3666f0802a6040f0f24c74226 (application version 2.6.0).
+- The root Vite entry imports upstream packages/web/src/mobile-main.tsx. That creates the official browser RuntimeAPIs and renders renderMobileApp / MobileApp.
+- Root index.html is based on the upstream packages/web/mobile.html shell. Only two host changes are made: load Telegram's WebApp SDK and use local src/main.tsx as the entry.
+- Local Telegram integration handles ready/expand, viewport updates, color-scheme host state, and Telegram BackButton. A guarded Vite transform routes BackButton to the exact upstream mobile handleNativeBack callback.
+- Upstream files in vendor/openchamber remain unchanged.
+- The project is Node.js >=24.14.0 + npm only. The npm lockfile for browser dependencies was generated and committed by GitHub Actions at 176dfcafc8b4f8b84b0ec6b14be0715d63bb7ab3.
+- Latest root-path integration verification passed on commit d7a79b2e1bccf9af227f1f9d6348894a560fca52, run 41729605708: npm ci, Telegram host typecheck, and full Vite bundle all succeeded.
+- The official upstream Vite chunking strategy was adapted locally. In the passing build, Mermaid was 29.52 KB and MarkdownRendererImpl 95.23 KB; renderMobileApp remains 5.74 MB raw / 1.65 MB gzip, and heic2any is 1.35 MB raw / 341 KB gzip. Review real-world load performance without removing upstream functionality.
+- The current CI change (commit 2de967909ee042ca8463871e6a56707097324eb7) now runs build:miniapp:same-origin to verify the production /miniapp/ base path. Its workflow run must pass before this checkpoint is considered fully current.
 - npm ci reported 10 dependency audit findings (5 low, 4 high, 1 critical). Inspect the advisory tree before release; do not run npm audit fix --force.
-- Production origin requirement: upstream OpenChamber Server does not allow arbitrary TGCloud static origins. Serve the Mini App on the same scheme/host/port as OpenChamber Server under /miniapp/. TGCloud static hosting is intentionally disabled in tgcloud.jsonc; TGCloud remains for optional backend modules.
+- Production must use the same scheme, host, and port as OpenChamber Server. The pinned server CORS policy does not allow arbitrary TGCloud static origins. TGCloud frontend static hosting is intentionally disabled; TGCloud remains available for optional backend modules.
 
 ## Active phase
-Phase 1 — Official mobile UI adoption (renderer and host bridge integrated; full production build and Telegram runtime verification outstanding).
+Phase 1 — Official mobile UI adoption. The renderer and Telegram host bridge are integrated, and root-path full build passed. Production /miniapp/ build and live Telegram runtime testing remain.
 
 ## Completed
 - React + TypeScript + Vite host scaffold.
-- Official OpenChamber source pinned as a Git submodule.
-- Upstream mobile browser entry, renderer, assets, CSS, theme, and browser API source wired through Vite aliases.
-- Root npm manifest and committed package-lock for browser UI dependencies.
-- Telegram lifecycle, initial viewport/theme integration, and safe-area styles.
-- Telegram BackButton bridge to upstream mobile back-navigation state.
-- Host typecheck scoped to local Telegram glue; Vite bundles the full upstream runtime.
-- Same-origin deployment guide and Vite /miniapp/ build script.
-- TGCloud config no longer publishes frontend files to its separate origin.
-- Phase 0 checks passed on PR #1 before upstream integration (runs 41726418174 and 41726565011).
+- Official OpenChamber source pinned as a recursive Git submodule.
+- Official upstream mobile HTML shell, browser entry, renderer, runtime API, assets, CSS, fonts, and themes integrated.
+- Root npm manifest and committed package-lock for required browser dependencies.
+- Vite aliases for upstream UI, Web runtime, and SDK.
+- Telegram lifecycle, viewport, theme host state, safe-area styling, and BackButton bridge to upstream navigation.
+- Vite worker format set to ES, matching upstream.
+- Upstream manualChunks strategy ported to keep dynamically loaded syntax grammars, diff highlights, and markdown renderer out of eager vendor chunks.
+- Same-origin deployment guidance and build script for /miniapp/.
+- TGCloud static frontend hosting removed to avoid separate-origin API CORS failures.
+- CI passed on d7a79b2 (run 41729605708) for npm ci, host typecheck, and root-path full Vite build.
 
 ## Remaining work
-1. Verify latest CI passes npm ci, host typecheck, and full upstream Vite build after worker.format='es'.
-2. Review dependency audit advisories and upgrade/remove unsafe or unused paths without breaking upstream.
-3. Verify same-origin deployment under /miniapp/, including pairing/authentication, API calls, streaming, WebSockets, assets, and Telegram Web CSP.
-4. Test the official mobile UI on Telegram Android, iOS, Desktop, Telegram Web, and browser fallback.
-5. Complete BotFather launch/menu docs and review/replace the TGCloud scaffold echo handler before production deployment.
+1. Verify the current CI run passes build:miniapp:same-origin with the /miniapp/ base.
+2. Verify the deployed app on the same OpenChamber Server origin, including assets, login/pairing, API calls, streaming, WebSockets, and CSP embedding.
+3. Test official mobile workflows on Telegram Android, iOS, Desktop, Telegram Web, and browser fallback.
+4. Review npm audit advisories and bundle performance; do not remove upstream features to reduce size without an explicit product decision.
+5. Complete BotFather launch/menu docs and review/replace the Telegram Serverless echo handler before any production backend deployment.
 6. Finish PR #1 review; do not open another PR while #1 remains open.
 
 ## Architecture and security boundaries
-- UI source of truth is the pinned upstream mobile renderer, not a local recreation or desktop shell.
+- UI source of truth is pinned upstream MobileApp/renderMobileApp, not desktop App.tsx and not a local clone.
 - OpenChamber Server remains privileged backend for sessions, OpenCode lifecycle, tools, filesystem, and Git.
-- Upstream uses Bun workspaces, but this repository must not run Bun or introduce a Bun lockfile.
-- npm run typecheck checks locally owned Telegram/Vite glue. npm run build is the full upstream bundle integration check.
-- npm run build:miniapp:same-origin builds assets with base path /miniapp/.
-- npm run deploy deploys only tgcloud/ backend modules. It does not publish frontend to TGCloud static hosting.
-- Upstream CORS accepts same-origin plus packaged/local-dev origins. OPENCHAMBER_FRAME_ANCESTORS changes CSP framing only; it is not a CORS allowlist.
+- The upstream monorepo uses Bun, but this repository must not run Bun or add a Bun lockfile.
+- npm run typecheck checks locally owned Telegram/Vite host glue; Vite build bundles the full upstream renderer and runtime.
+- npm run build:miniapp:same-origin builds for /miniapp/.
+- npm run deploy deploys only tgcloud/ backend modules, not the frontend.
+- Upstream CORS accepts same-origin plus packaged/local-dev origins. OPENCHAMBER_FRAME_ANCESTORS controls CSP framing only; it is not a CORS allowlist.
 - Telegram Serverless modules run in Telegram's isolated V8 runtime, not ordinary Node.js.
-- tgcloud/handlers/message.js is still the scaffold echo handler; review/replace before production.
+- tgcloud/handlers/message.js is still the scaffold echo handler; do not deploy it to production before review/replacement.
 - Never commit CLI credentials. Any CLI Access Token previously pasted into chat must be treated as compromised and revoked; authenticate locally with a newly issued token.
 
 ## Working rules
 - Read this file before ROADMAP.md on every continuation.
-- Audit current repository and PR state before each continuation.
+- Audit the current repo, PR, and CI before every continuation.
 - Use Node.js and npm only; use npm ci for reproducible installs.
-- Do not edit files inside the upstream submodule or recreate the upstream UI locally.
-- Do not claim UI/API parity, CI success, or deployment before the corresponding verification passes.
-- Update this file and ROADMAP.md whenever the phase or a material decision changes.
+- Do not modify vendor/openchamber or recreate upstream UI locally.
+- Do not claim 1:1 runtime parity, CI success, or deployment before actual verification.
+- Update this file and ROADMAP.md when phase status or material decisions change.
 - Keep secrets out of chat, source control, logs, and frontend environment variables.
