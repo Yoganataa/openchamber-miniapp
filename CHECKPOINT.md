@@ -16,7 +16,10 @@ Open PR: https://github.com/Yoganataa/openchamber-miniapp/pull/1 (draft)
 - The project is Node.js >=24.14.0 + npm only. The npm lockfile for browser dependencies was generated and committed by GitHub Actions at 176dfcafc8b4f8b84b0ec6b14be0715d63bb7ab3.
 - Latest root-path integration verification passed on commit d7a79b2e1bccf9af227f1f9d6348894a560fca52, run 41729605708: npm ci, Telegram host typecheck, and full Vite bundle all succeeded.
 - The official upstream Vite chunking strategy was adapted locally. In the passing build, Mermaid was 29.52 KB and MarkdownRendererImpl 95.23 KB; renderMobileApp remains 5.74 MB raw / 1.65 MB gzip, and heic2any is 1.35 MB raw / 341 KB gzip. Review real-world load performance without removing upstream functionality.
-- The production /miniapp/ build passed on commit 2de967909ee042ca8463871e6a56707097324eb7, run 41729951658. The new auto-deploy changes are awaiting PR CI and merge.
+- The production /miniapp/ build passed on commit 2de967909ee042ca8463871e6a56707097324eb7, run 41729951658.
+- Current PR head dd93cb8854627c68242b4a73ac877bcfdaa1ba5a passed GitHub Actions CI run 41733343453: npm ci, Telegram host typecheck, and production /miniapp/ build. The workflow job and all six steps completed successfully.
+- PR #1 remains open as a draft because real Telegram/OpenChamber runtime verification is still outstanding; do not merge or mark ready based on build CI alone.
+- Checked pinned upstream commit 1e74724fc04026e3666f0802a6040f0f24c74226 against current upstream main: package.json, mobile-main.tsx, runtimeConfig.ts, MobileApp.tsx, and mobile.html have matching blob hashes (upstream version 2.6.0).
 - npm ci reported 10 dependency audit findings (5 low, 4 high, 1 critical). Inspect the advisory tree before release; do not run npm audit fix --force.
 - Production must use the same scheme, host, and port as OpenChamber Server. The pinned server CORS policy does not allow arbitrary TGCloud static origins. TGCloud frontend static hosting is intentionally disabled; TGCloud remains available for optional backend modules.
 
@@ -37,14 +40,13 @@ Phase 1 — Official mobile UI adoption. The renderer and Telegram host bridge a
 - CI passed on d7a79b2 (run 41729605708) for npm ci, host typecheck, and root-path full Vite build.
 
 ## Remaining work
-1. Verify the docs-only head CI run completes successfully.
-2. Verify the deployed app on the same OpenChamber Server origin, including assets, login/pairing, API calls, streaming, WebSockets, and CSP embedding.
-3. Test official mobile workflows on Telegram Android, iOS, Desktop, Telegram Web, and browser fallback.
-4. Review npm audit advisories and bundle performance; do not remove upstream features to reduce size without an explicit product decision.
-5. Complete BotFather launch/menu docs and implement real bot handlers only after their product behavior is defined.
-6. Verify PR CI for the new deployment workflow and confirm the repository Actions secret is named exactly TGCLOUD_TOKEN.
-7. After PR #1 is merged to main, verify the first TGCloud deployment run and inspect the bot's deployed modules/webhook state.
-8. Finish live Telegram/OpenChamber runtime testing; do not open another PR while #1 remains open.
+1. Build with the real public `VITE_OPENCHAMBER_SERVER_URL` and deploy `dist/` under the same origin as OpenChamber Server at `/miniapp/`.
+2. Configure the bot's Main Mini App and chat menu button using the new BotFather instructions; verify both launch paths with the actual bot.
+3. Verify the deployed app on the same OpenChamber Server origin, including static assets, upstream pairing/login, API calls, streaming, WebSockets, and CSP embedding.
+4. Test official mobile workflows on Telegram Android, iOS, Desktop, Telegram Web, and browser fallback; verify BackButton, theme, viewport, keyboard, and safe-area behavior.
+5. Review npm audit advisories and bundle performance; do not remove upstream features to reduce size without an explicit product decision.
+6. After PR #1 is merged to main, verify the first TGCloud deployment run and inspect the bot's deployed modules/webhook state. The workflow expects the repository Actions secret named `TGCLOUD_TOKEN`; its value is not inspected or exposed here.
+7. Finish live Telegram/OpenChamber runtime testing. Keep PR #1 as draft until the runtime checks pass; do not open a second PR while #1 remains open.
 
 ## Architecture and security boundaries
 - UI source of truth is pinned upstream MobileApp/renderMobileApp, not desktop App.tsx and not a local clone.
