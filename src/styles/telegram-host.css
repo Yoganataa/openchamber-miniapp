@@ -1,0 +1,59 @@
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.miniapp-startup-error {
+  display: grid;
+  min-height: 100vh;
+  min-height: 100dvh;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+  background: #171515;
+  color: #fffdf4;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.miniapp-startup-error section {
+  width: min(100%, 480px);
+}
+
+.miniapp-startup-error .eyebrow {
+  color: #a7c957;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+}
+
+.miniapp-startup-error h1 {
+  margin: 18px 0 12px;
+  font-size: clamp(28px, 8vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -.04em;
+}
+
+.miniapp-startup-error p {
+  line-height: 1.65;
+}
+
+.miniapp-startup-error code {
+  font-size: .92em;
+}
+
+.miniapp-startup-error .muted {
+  color: #aaa59b;
+  font-size: 13px;
+}
