@@ -39,7 +39,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       external: ['node:child_process', 'node:fs', 'node:path', 'node:url', 'node:os'],
       output: {
