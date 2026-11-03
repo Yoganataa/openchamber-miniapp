@@ -17,9 +17,9 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Reuse upstream browser RuntimeAPIs, API adapters, CSS, fonts, icons, themes, and assets.
 - [x] Resolve upstream SDK/UI/Web imports through root Vite aliases and npm dependencies.
 - [x] Keep Telegram-specific boot and BackButton glue in this repository.
-- [x] Pass npm ci, host typecheck, and full Vite build on root path (run 41729605708, commit d7a79b2).
+- [x] Pass npm ci, host typecheck, and full Vite build (run 41729605708, commit d7a79b2), plus production /miniapp/ build (run 41729951658, commit 2de9679).
 - [x] Port upstream's manual chunk strategy; Mermaid and Markdown renderer are split from the eager bundle.
-- [ ] Verify the production build script under /miniapp/ (current CI run after commit 2de9679).
+- [x] Verify the production build script under /miniapp/ (CI run 41729951658 on commit 2de9679).
 - [ ] Verify navigation, chat, sessions, workspace drawer, files, changes, settings, error states, and attachments against live OpenChamber Server.
 - [ ] Verify the app in Telegram Android, iOS, Desktop, Telegram Web, and fallback browser.
 
