@@ -6,7 +6,7 @@ This roadmap tracks implementation status, not merely planned work. A task is co
 
 The Mini App uses the official OpenChamber mobile UI as its source of truth. Do not recreate the interface or independently reimplement existing mobile workflows. Local code should be limited to the Telegram host adapter, Mini App-specific authentication/bootstrap, and narrowly scoped integration glue. The upstream source pin and exact intended entry points are documented in [UPSTREAM-INTEGRATION.md](docs/UPSTREAM-INTEGRATION.md).
 
-## Phase 0 — Foundation
+## Phase 0 — Foundation <badge color="success">Complete</badge>
 - [x] Define scope and architecture boundaries.
 - [x] Scaffold React + TypeScript + Vite.
 - [x] Add Telegram WebApp adapter and browser fallback.
@@ -14,7 +14,7 @@ The Mini App uses the official OpenChamber mobile UI as its source of truth. Do 
 - [x] Add typecheck/build scripts and GitHub Actions CI workflow.
 - [x] Pin the official OpenChamber upstream source as a Git submodule.
 - [x] Configure CI checkout to initialize recursive submodules.
-- [ ] Verify npm ci, typecheck, and production build through a successful GitHub Actions run.
+- [x] Verify npm ci, typecheck, and production build through a successful GitHub Actions run (PR #1, run 41726418174).
 
 ## Phase 1 — Official mobile UI adoption
 - [ ] Replace the local placeholder screen with upstream `renderMobileApp` and `MobileApp`.
