@@ -78,7 +78,7 @@ export default defineConfig({
           if (packageName.includes('remark') || packageName.includes('rehype') || packageName === 'react-markdown') return 'vendor-markdown';
           if (packageName === '@base-ui/react' || packageName.startsWith('@base-ui')) return 'vendor-base-ui';
 
-          const sanitized = packageName.replace(/^@/, '').replace(/\\//g, '-');
+          const sanitized = packageName.replace(/^@/, '').replace(/\//g, '-');
           return `vendor-${sanitized}`;
         },
       },
