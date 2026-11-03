@@ -50,6 +50,36 @@ location ^~ /miniapp/ {
 
 Do not use `*` in `frame-ancestors`. This CSP header is for the static Mini App document; do not overwrite CSP on OpenChamber API routes. Set a no-cache policy for `/miniapp/index.html` and long-lived immutable caching for hashed `/miniapp/assets/*` if your deployment already manages cache headers.
 
+## Configure the Telegram bot
+
+The Mini App must be deployed at the same-origin URL described above before registering it with Telegram. Use the exact public URL, including the `/miniapp/` path and trailing slash.
+
+### Main Mini App
+
+1. Open [@BotFather](https://t.me/BotFather) and send `/mybots`.
+2. Select the bot, then open **Bot Settings → Configure Mini App** and enable/configure its Main Mini App.
+3. Set the Main Mini App URL to your deployed URL, for example `https://openchamber.example.com/miniapp/`.
+4. Save the configuration. Telegram adds a **Launch app** entry to the bot profile when a Main Mini App is configured.
+
+### Chat menu button
+
+1. In [@BotFather](https://t.me/BotFather), send `/setmenubutton` and select the bot.
+2. Set the button label (for example, `OpenChamber`) and use the same deployed `/miniapp/` URL.
+3. Alternatively, use **Bot Settings → Menu Button**.
+
+The Main Mini App and chat menu button are separate launch surfaces; configure both only when both entry points are desired. A Main Mini App can also be opened using a direct link such as `https://t.me/<bot_username>?startapp`. Telegram forwards a supplied `startapp` value as launch data; this project does not currently define app-specific handling for that value.
+
+### Launch smoke test
+
+- Open the app from the bot profile and from the chat menu button.
+- Confirm the loaded URL stays on the OpenChamber Server's exact scheme, hostname, and port.
+- Confirm the upstream pairing/login flow, API requests, streaming, and WebSocket connection work.
+- Confirm Telegram BackButton behavior and viewport/theme changes; repeat on Android, iOS, Desktop, and Telegram Web.
+
+Do not treat Telegram-provided user data as OpenChamber authorization. The normal OpenChamber authentication/pairing flow remains required. Validate Telegram `initData` on a trusted backend before using it for any identity mapping or authorization.
+
+References: [Telegram Mini Apps](https://core.telegram.org/bots/webapps) and [Bot API changelog](https://core.telegram.org/bots/api-changelog).
+
 ## Telegram Serverless backend deployment
 
 The repository's `tgcloud.jsonc` intentionally does not configure a static Mini App folder. The frontend is hosted beside OpenChamber Server to satisfy upstream CORS policy. The GitHub Actions deploy workflow **does not publish the frontend** to TGCloud's separate static hostname.
