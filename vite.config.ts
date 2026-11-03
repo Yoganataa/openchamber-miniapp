@@ -12,6 +12,8 @@ const web = path.join(upstream, 'web/src');
 const sdk = path.join(upstream, 'sdk/src');
 
 export default defineConfig({
+  base: process.env.VITE_BASE_PATH?.trim() || '/',
+  worker: { format: 'es' },
   plugins: [telegramBackButtonPlugin(), react()],
   resolve: {
     alias: [
