@@ -29,6 +29,7 @@ export type TelegramStorageHost = {
 export type AccountScopedStorage = {
   enableConnectionSync(callback: (connections: unknown[]) => void): void;
   seedConnections(connections: unknown[]): void;
+  replaceLocalConnections(connections: unknown[]): void;
   readConnections(): unknown[];
   flushCredentials(): Promise<void>;
 };
@@ -282,8 +283,16 @@ export const installTelegramAccountStorage = async (
       syncEnabled = true;
     },
     seedConnections(connections) {
+      replaceLocalConnections(connections);
+    },
+    replaceLocalConnections(connections) {
+      const wasEnabled = syncEnabled;
       syncEnabled = false;
-      writeConnectionValue(JSON.stringify(connections.slice(0, 1)));
+      try {
+        writeConnectionValue(JSON.stringify(connections.slice(0, 1)));
+      } finally {
+        syncEnabled = wasEnabled;
+      }
     },
     readConnections() {
       return parseJsonArray(localStorage.getItem(MOBILE_CONNECTIONS_STORAGE_KEY));
