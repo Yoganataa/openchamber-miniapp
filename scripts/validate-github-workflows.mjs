@@ -1,5 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { parseDocument } from "yaml";
 
 const workflowDirectory = fileURLToPath(new URL("../.github/workflows/", import.meta.url));
@@ -14,7 +15,7 @@ if (workflowFiles.length === 0) {
 const errors = [];
 
 for (const file of workflowFiles) {
-  const source = await readFile(new URL(file, `file://${workflowDirectory}/`), "utf8");
+  const source = await readFile(join(workflowDirectory, file), "utf8");
   const document = parseDocument(source, { uniqueKeys: true });
 
   for (const error of document.errors) {
