@@ -245,6 +245,7 @@ async function start() {
     reconcileLocalInstance(developmentStorage, null);
     initializeStorageSync(null, developmentStorage);
     await import('@web/mobile-main');
+    document.getElementById('root')?.setAttribute('aria-busy', 'false');
     return;
   }
 
@@ -271,6 +272,7 @@ async function start() {
   // of truth. The host adapter isolates its storage and persists ownership
   // before any successful pairing/login transitions into the runtime.
   await import('@web/mobile-main');
+  document.getElementById('root')?.setAttribute('aria-busy', 'false');
 }
 
 void start().catch((error: unknown) => {
