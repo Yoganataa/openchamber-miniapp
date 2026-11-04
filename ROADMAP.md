@@ -45,7 +45,7 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Prevent cookie-backed OpenChamber session reuse in the Telegram host, including all `runtimeFetch` calls to direct and Private Relay runtimes.
 - [x] Add /start RichMessage Bot API 10.3 greeting with TOS, Privacy Policy, FAQ and Mini App entry.
 - [x] Add Serverless account-ownership and RichMessage contract tests.
-- [ ] Apply the production SQLite migration manually after schema deployment (PR #4 schema is merged; confirm the migration workflow itself has succeeded before considering this complete).
+- [ ] Apply the production SQLite migration manually after schema deployment. First attempt (run 41871919619) failed because `tgcloud migrate` lacked a non-interactive mode; workflow now uses `npx tgcloud migrate --safe` and must be rerun successfully.
 - [ ] Verify same-client account isolation, same-account multi-device behavior and Telegram SecureStorage on real Telegram clients.
 
 ## Phase 3 — Mobile workflow parity
@@ -67,7 +67,8 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Confirm Environment `production` and Environment secret `ACCESS_TOKEN`; verify main-branch eligibility and actual TGCloud deployment (run 41769613500).
 - [x] Add verified-initData endpoints and SQLite schema for account-owned instances.
 - [x] Add a manual GitHub Actions workflow for reviewed Serverless DB migrations; normal deploys still never migrate automatically.
-- [ ] Apply and verify the production migration on the user's actual bot (still manual; do not infer success from a TGCloud code deployment).
+- [x] Make the manual migration command compatible with non-interactive Actions by using `tgcloud migrate --safe`; add a CI guard that rejects removal of `--safe` or use of `--yes` in the production migration workflow.
+- [ ] Apply and verify the production migration on the user's actual bot (still manual; run 41871919619 failed on the missing CLI mode flag; corrected workflow uses safe-only `--safe`, not destructive `--yes`; do not infer success from a TGCloud code deployment).
 - [ ] Verify Telegram Serverless SDK runtime and quotas on the user's actual bot.
 - [ ] Add threat model and data-retention policy.
 - [ ] Add initData-verified endpoints only if a real backend identity-mapping requirement exists.
