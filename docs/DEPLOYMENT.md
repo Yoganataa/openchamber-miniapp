@@ -110,7 +110,7 @@ For a production-only target, set **Deployment branches and tags** to **Selected
 
 `.github/workflows/deploy-tgcloud.yml` runs only on `main` when backend source/configuration, the npm manifest/lockfile, or the deployment workflow changes. It also supports manual dispatch, but the job is restricted to `main`.
 
-Create a repository Actions secret with this exact name:
+Create an **Environment secret** with this exact name in the GitHub Environment `main`:
 
 ```text
 TGCLOUD_TOKEN
