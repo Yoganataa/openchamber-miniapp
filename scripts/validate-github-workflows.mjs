@@ -83,6 +83,15 @@ for (const file of workflowFiles) {
   }
 }
 
+// Production database migrations must never silently approve destructive changes.
+const migrationWorkflow = await readFile(join(workflowDirectory, "migrate-tgcloud.yml"), "utf8");
+if (!/npx tgcloud migrate --safe(?:\\s|$)/m.test(migrationWorkflow)) {
+  errors.push(" migrate-tgcloud.yml: non-interactive migration must use \`npx tgcloud migrate --safe\`.");
+}
+if (/npx tgcloud migrate --yes(?:\\s|$)/m.test(migrationWorkflow)) {
+  errors.push(" migrate-tgcloud.yml: --yes can approve destructive warnings and is not allowed in the production migration workflow.");
+}
+
 if (errors.length > 0) {
   process.stderr.write(`${errors.join("\n")}\n`);
   process.exitCode = 1;
