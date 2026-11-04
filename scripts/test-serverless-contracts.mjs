@@ -72,6 +72,7 @@ const welcome = buildWelcomeRichMessage({ firstName: 'Nata', hasInstance: false 
 assert.ok(Array.isArray(welcome.blocks));
 assert.ok(welcome.blocks.some((block) => block.type === 'heading'));
 assert.ok(welcome.blocks.some((block) => block.type === 'expandable_blockquote'));
+assert.ok(welcome.blocks.some((block) => block.type === 'table' && block.is_compact === true));
 
 const flattenBlocks = (blocks) => blocks.flatMap((block) => [
   block,
