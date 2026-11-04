@@ -40,7 +40,7 @@ No OpenChamber server URL or credential is compiled into the frontend. The targe
 
 ## Production hosting on Telegram
 
-TGCloud static hosting publishes the Vite `dist/` directory at the URL printed by `npx tgcloud push dist/`, normally in this form:
+TGCloud static hosting publishes the Vite `dist/` directory at the URL printed by `npx tgcloud push`, normally in this form:
 
 ```
 https://app<app_id>.tgcloud.ai/
