@@ -11,11 +11,10 @@ const MOBILE_QR_SCAN_IMPORT_MARKER = "import { isQrScanSupported, parseConnectio
 const MINIAPP_PAIRING_HINT_MARKER =
   '                  <form className="flex w-full flex-col gap-3 pt-3" onSubmit={handleSubmit}>';
 const CONNECT_ERROR_MARKER =
-  "setError(t(error instanceof MobileHeaderStorageError ? 'mobile.connect.headers.error' : 'mobile.connect.error.invalidUrl'));
+  "setError(t(error instanceof MobileHeaderStorageError ? 'mobile.connect.headers.error' : 'mobile.connect.error.invalidUrl'));";
 
 const PAIRING_ERROR_MARKER = `      console.warn('[mobile-connect] pairing threw', error);
-      setError(t('mobile.connect.error.authRequired'));`;";
-
+      setError(t('mobile.connect.error.authRequired'));`;
 const MOBILE_APP_SUFFIX = '/packages/ui/src/apps/MobileApp.tsx';
 const MOBILE_ENTRY_SUFFIX = '/packages/ui/src/apps/renderMobileApp.tsx';
 const MOBILE_CONNECTION_SUFFIX = '/packages/ui/src/apps/MobileConnectionWelcome.tsx';
