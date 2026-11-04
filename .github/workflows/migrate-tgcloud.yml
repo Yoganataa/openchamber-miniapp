@@ -43,4 +43,6 @@ jobs:
           fi
 
           npx tgcloud fetch
-          npx tgcloud migrate
+          # CI cannot prompt for confirmation. Apply additive/safe changes only;
+          # skip destructive warnings and manual migrations.
+          npx tgcloud migrate --safe
