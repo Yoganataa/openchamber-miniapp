@@ -25,7 +25,7 @@ const candidateIdentityKeys = (candidates: unknown): Set<string> => {
   for (const candidate of candidates) {
     if (!isRecord(candidate)) continue;
     if (candidate.kind === 'direct' && typeof candidate.url === 'string') {
-      keys.add(`direct:${candidate.url.replace(/\\/$/, '')}`);
+      keys.add(`direct:${candidate.url.replace(/\/$/, '')}`);
     }
     if (candidate.kind === 'relay' && isRecord(candidate.relay)
       && typeof candidate.relay.serverId === 'string') {
