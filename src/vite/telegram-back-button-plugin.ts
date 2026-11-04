@@ -175,7 +175,7 @@ export function telegramBackButtonPlugin(): Plugin {
         return {
           code: withDirectoryInit.replace(
             RUNTIME_FETCH_RELAY_MARKER,
-            `${RUNTIME_FETCH_RELAY_MARKER}\\n${isolatedRequestInit}`,
+            `${RUNTIME_FETCH_RELAY_MARKER}\n${isolatedRequestInit}`,
           ),
           map: null,
         };
