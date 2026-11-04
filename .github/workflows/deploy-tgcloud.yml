@@ -48,12 +48,12 @@ jobs:
 
       - name: Deploy changed Telegram Serverless modules
         env:
-          TGCLOUD_TOKEN: ${{ secrets.TGCLOUD_TOKEN }}
+          TGCLOUD_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
           set -euo pipefail
 
           if [ -z "${TGCLOUD_TOKEN:-}" ]; then
-            echo "::error::Missing Environment secret TGCLOUD_TOKEN in GitHub Environment production."
+            echo "::error::Missing Environment secret ACCESS_TOKEN in GitHub Environment production."
             exit 1
           fi
 
