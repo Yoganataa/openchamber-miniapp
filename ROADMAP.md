@@ -38,8 +38,14 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [ ] Verify the deployed Telegram native QR popup opens, scans a real pairing QR, closes on cancel, and redeems pairing on Telegram Android/iOS/Desktop (TGCloud deployment run 41771745665).
 - [ ] Confirm theme/viewport behavior after mount, including keyboard resize.
 - [x] Document BotFather Main Mini App, chat menu button, and direct-link setup in README and deployment guide.
-- [ ] Validate Telegram initData server-side if it is used for identity mapping or authorization.
-- [ ] Add API contract and Telegram host integration tests.
+- [x] Validate Telegram initData server-side and derive the sole instance owner from verified ctx.initData.user.id.
+- [x] Add one-row-per-account SQLite ownership with stable server-issued instance identity.
+- [x] Isolate upstream local/session storage by Telegram account; keep per-device credentials out of SQLite and use Telegram SecureStorage when available.
+- [x] Prevent cookie-backed OpenChamber session reuse in the Telegram host, including all `runtimeFetch` calls to direct and Private Relay runtimes.
+- [x] Add /start RichMessage Bot API 10.3 greeting with TOS, Privacy Policy, FAQ and Mini App entry.
+- [x] Add Serverless account-ownership and RichMessage contract tests.
+- [ ] Apply the production SQLite migration manually after schema deployment.
+- [ ] Verify same-client account isolation, same-account multi-device behavior and Telegram SecureStorage on real Telegram clients.
 
 ## Phase 3 — Mobile workflow parity
 - [ ] Use the pinned mobile renderer as the parity baseline; do not rebuild its UI locally.
@@ -58,6 +64,9 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Bind the deploy job to GitHub Environment `production`; read the environment-scoped `ACCESS_TOKEN` secret and map it to `TGCLOUD_TOKEN`.
 - [x] Keep database migrations out of the unattended deployment workflow.
 - [x] Confirm Environment `production` and Environment secret `ACCESS_TOKEN`; verify main-branch eligibility and actual TGCloud deployment (run 41769613500).
+- [x] Add verified-initData endpoints and SQLite schema for account-owned instances.
+- [x] Add a manual GitHub Actions workflow for reviewed Serverless DB migrations; normal deploys still never migrate automatically.
+- [ ] Apply and verify the production migration on the user's actual bot.
 - [ ] Verify Telegram Serverless SDK runtime and quotas on the user's actual bot.
 - [ ] Add threat model and data-retention policy.
 - [ ] Add initData-verified endpoints only if a real backend identity-mapping requirement exists.

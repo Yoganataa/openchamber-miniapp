@@ -1,0 +1,46 @@
+name: Migrate Telegram Serverless database
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tgcloud-production-database-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply reviewed SQLite schema migrations
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main and recursive submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply TGCloud database migrations
+        env:
+          TGCLOUD_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TGCLOUD_TOKEN:-}" ]; then
+            echo "::error::Missing Environment secret ACCESS_TOKEN in GitHub Environment production."
+            exit 1
+          fi
+
+          npx tgcloud fetch
+          npx tgcloud migrate

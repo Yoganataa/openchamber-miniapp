@@ -3,11 +3,18 @@
 Last audited: 2026-11-04
 Repository: https://github.com/Yoganataa/openchamber-miniapp
 Default branch: main
-Working branch: main
+Working branch: fix/telegram-account-isolation
 PR #1 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/1
 PR #3 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/3 (merge commit `9f3ea4c8c20f92f2df747f39ba39d31f5e966c3a`)
 
 ## Current state
+
+- Security hardening is implemented on `fix/telegram-account-isolation` in PR #4. Latest CI run 41791226899 passed workflow validation, Serverless/RichMessage contracts, host typecheck, and the root-path production build. PR review and merge are pending.
+- New backend contract: one `telegram_instances` row per verified Telegram user ID, with `telegram_user_id` as the SQLite primary key and a stable server-generated instance ID. The database contains transport metadata only; it never stores OpenChamber client tokens.
+- New Serverless endpoints: `getMyInstance`, `saveMyInstance`, and `deleteMyInstance`. Each endpoint reads the owner exclusively from verified `ctx.initData.user.id`.
+- The Mini App host namespaces upstream browser storage by verified Telegram account, uses Telegram SecureStorage for per-device client credentials where supported, purges legacy origin-wide keys, forces `credentials: omit` for all active OpenChamber runtime requests (direct and Private Relay), rejects cookie-only login, and waits for account mapping/credential persistence before pairing or login completes.
+- The bot private-chat `/start` handler sends a Bot API 10.3 RichMessage with greeting, connection instructions, Terms of Service, Privacy Policy, FAQ, compact ownership table, expandable quotation, and Mini App button. The policy text is a product draft and should receive legal review before a public launch.
+- Production database changes remain manual: merge/deploy the schema, then run the `Migrate Telegram Serverless database` workflow against `main`. No migration has been run for this change yet. The existing owner must pair once after the legacy storage purge.
 
 - The root app uses the official OpenChamber mobile browser entry from the recursive `vendor/openchamber` submodule.
 - Upstream pin: `1e74724fc04026e3666f0802a6040f0f24c74226`, OpenChamber 2.6.0. Upstream source remains untouched.
@@ -23,7 +30,7 @@ PR #3 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/3 (merge com
 - The production deploy workflow successfully consumed Environment secret `ACCESS_TOKEN` through the `TGCLOUD_TOKEN` mapping. Main-branch CI run 41769613483 also passed `npm ci`, host typecheck, and the root-path build.
 - The deploy workflow targets GitHub Environment `production`, maps `secrets.ACCESS_TOKEN` to CLI variable `TGCLOUD_TOKEN`, runs `npx tgcloud fetch`, then publishes the configured `dist/` static build and changed `tgcloud/` modules with one `npx tgcloud push`. This is a single atomic TGCloud deployment; it does not use `--force` or apply database migrations.
 - Environment `production` and secret `ACCESS_TOKEN` were shown by the user; allowed deployment branch is `main`. Secret values are not inspected.
-- Browser upstream persistence stores the issued client token in Telegram WebView local storage, unlike native app Keychain/Keystore. Revoke the paired device from the OpenChamber host when it should no longer have access.
+- Before account-isolation rollout, browser upstream persistence stored the issued client token in origin-wide WebView local storage. The pending migration intentionally purges those legacy origin-wide keys and does not attribute the old token to a Telegram account.
 - Earlier npm install reported 10 dependency audit findings (5 low, 4 high, 1 critical). Review advisories before release; do not run `npm audit fix --force`.
 
 ## Upstream maintenance
@@ -35,7 +42,7 @@ PR #3 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/3 (merge com
 
 ## Active phase
 
-Phase 2 — Telegram pairing and remote runtime verification. Official UI adoption, TGCloud static publication, and Telegram-native QR scanner integration are deployed. Real QR camera flow, pairing-v2 redemption, Private Relay, and live OpenChamber workflow tests still require device verification.
+Phase 2 — Telegram account isolation, pairing and remote runtime verification. Official UI adoption, TGCloud static publication, and Telegram-native QR scanner integration are deployed. Real QR camera flow, pairing-v2 redemption, Private Relay, and live OpenChamber workflow tests still require device verification.
 
 ## Completed implementation
 
@@ -50,14 +57,12 @@ Phase 2 — Telegram pairing and remote runtime verification. Official UI adopti
 
 ## Remaining work
 
-1. Configure BotFather's Main Mini App URL as `https://app8984347139.tgcloud.ai/`; optionally configure the menu button to the same URL.
-2. Reload the Telegram Mini App. On Telegram clients exposing WebApp QR scanner support (version 7.7+), confirm **Scan QR code** is visible and opens Telegram's native scanner.
-3. Start OpenChamber Server on the user's machine. In **Settings → Remote Instances → Connect to this server → Add a device**, choose **Anywhere**, then create the QR code.
-4. Scan the QR code from the Mini App. Verify the scanner closes and pairing-v2 redeems automatically. Use **Copy → Connection link** and paste it manually only if that Telegram client lacks scanner support.
-5. Verify Private Relay connectivity, then exercise sessions, chat streaming, cancellation/reconnect, files, diffs and WebSocket-backed features; capture feedback and any errors.
-6. Verify BackButton, theme, viewport, safe area and keyboard behavior in Telegram Android, iOS, Desktop and Telegram Web.
-7. Review npm audit advisories, performance, accessibility and release/rollback procedures.
-
+1. Review and merge the account-isolation PR only after CI is green.
+2. Let the `main` deployment publish the Serverless schema/endpoints/handler, then manually run **Migrate Telegram Serverless database** from GitHub Actions. Verify the migration job before opening the bot.
+3. Reload the Mini App. The owner must pair again once after the legacy origin-wide storage purge. Confirm `/start` renders the RichMessage 10.3 greeting, Terms, Privacy Policy and FAQ.
+4. Test two Telegram accounts in the same Telegram client: the owner's account must restore only its own instance; the second account must see a clean onboarding and must not inherit any server session.
+5. Test two devices on the same Telegram account: the server-side `instance_id` must remain stable while each device uses its own client credential.
+6. Verify Telegram SecureStorage and the compatibility fallback in Telegram clients that do not support it.
 ## Architecture and security boundaries
 
 - UI source of truth is pinned upstream MobileApp/renderMobileApp, not desktop App.tsx and not a locally recreated interface.
@@ -66,7 +71,7 @@ Phase 2 — Telegram pairing and remote runtime verification. Official UI adopti
 - Official pairing-v2 establishes the client identity. Choose Anywhere to allow the upstream E2E Private Relay transport when direct connectivity is unavailable.
 - The relay is a transport only; it does not grant authorization by itself. The host still authenticates each request.
 - Do not put server URLs with permanent credentials, client tokens, bot tokens or CLI tokens into frontend code or `VITE_*` variables.
-- Browser-mode client token persistence uses WebView local storage; revocation is performed at the OpenChamber host.
+- The pending Telegram account adapter scopes browser storage by verified Telegram user ID and uses per-device Telegram SecureStorage where available. Device-token revocation is still performed at the OpenChamber host.
 - The upstream monorepo uses Bun, but this project must remain Node.js + npm only. Do not add a Bun lockfile or second package manager.
 - `npm run typecheck` checks local host glue; `npm run build` bundles the full pinned upstream renderer.
 - `npm run deploy` builds the frontend, fetches TGCloud state, then uses one `npx tgcloud push` to publish static assets and changed `tgcloud/` modules in one batch. Never use `--force`; database migrations remain manual.

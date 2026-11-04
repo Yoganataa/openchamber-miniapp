@@ -14,6 +14,25 @@ const MINIAPP_PAIRING_HINT_MARKER =
 const MOBILE_APP_SUFFIX = '/packages/ui/src/apps/MobileApp.tsx';
 const MOBILE_ENTRY_SUFFIX = '/packages/ui/src/apps/renderMobileApp.tsx';
 const MOBILE_CONNECTION_SUFFIX = '/packages/ui/src/apps/MobileConnectionWelcome.tsx';
+const MOBILE_CONNECTIONS_SUFFIX = '/packages/ui/src/apps/mobileConnections.ts';
+const RUNTIME_AUTH_SUFFIX = '/packages/ui/src/lib/runtime-auth.ts';
+const RUNTIME_FETCH_SUFFIX = '/packages/ui/src/lib/runtime-fetch.ts';
+const RUNTIME_FETCH_INIT_MARKER = '  const requestInit = withSpaceDirectory(input, ownInit, directory);';
+const RUNTIME_FETCH_RELAY_MARKER = '  const relayPath = relay ? extractRelayPath(input, query) : null;';
+const RUNTIME_AUTH_COOKIE_MARKER = "credentials: 'include',";
+
+const ACCOUNT_SAVE_MARKERS = [
+  "      await persistMetadata({ id: saved?.id, label, candidates, clientToken: token, requestHeaders: headerUpdate });",
+  "      await persistMetadata({ label, candidates: deviceCandidates, serverId, clientToken: issuedToken });",
+  "          await persistMetadata({ id, label, candidates });",
+  "      await persistMetadata({ id, label, candidates, clientToken: issuedToken });",
+  "      const next = await persistMetadata({ id: input.id, label, candidates, clientToken, requestHeaders });",
+  "      const next = await deleteMobileConnection(id);",
+];
+
+const ACCOUNT_COOKIE_MARKER = "credentials: token ? 'omit' : 'include'";
+const PASSWORD_COOKIE_MARKER = "credentials: 'include' as const";
+const COOKIE_ONLY_LOGIN_MARKER = "if (chosen.kind === 'direct' && !isCapacitorApp()) {";
 
 const count = (source: string, marker: string): number => source.split(marker).length - 1;
 
@@ -93,6 +112,95 @@ export function telegramBackButtonPlugin(): Plugin {
             '{isNativeShell || window.__OPENCHAMBER_MINIAPP_HOST__ === true ? app : <SessionAuthGate>{app}</SessionAuthGate>}',
           ),
           map:null,
+        };
+      }
+
+      if (sourceId.endsWith(MOBILE_CONNECTIONS_SUFFIX)) {
+        for (const marker of ACCOUNT_SAVE_MARKERS) {
+          const occurrences = count(code, marker);
+          if (occurrences !== 1) {
+            this.error(`Expected one upstream account-isolation marker, found ${occurrences}: ${marker}`);
+          }
+        }
+
+        const cookieOccurrences = count(code, ACCOUNT_COOKIE_MARKER);
+        const passwordCookieOccurrences = count(code, PASSWORD_COOKIE_MARKER);
+        const cookieOnlyLoginOccurrences = count(code, COOKIE_ONLY_LOGIN_MARKER);
+        if (cookieOccurrences !== 2 || passwordCookieOccurrences !== 1 || cookieOnlyLoginOccurrences !== 1) {
+          this.error(
+            `Expected two tokenless-session cookie guards, one password-login cookie guard, and one cookie-only login fallback, found session=${cookieOccurrences}, password=${passwordCookieOccurrences}, fallback=${cookieOnlyLoginOccurrences}.`,
+          );
+        }
+
+        let transformed = code;
+        for (const marker of ACCOUNT_SAVE_MARKERS) {
+          const indentation = marker.match(/^\s*/)?.[0] ?? '';
+          transformed = transformed.replace(
+            marker,
+            `${marker}\n${indentation}await window.__OPENCHAMBER_SYNC_INSTANCE__?.();`,
+          );
+        }
+
+        transformed = transformed.replaceAll(
+          ACCOUNT_COOKIE_MARKER,
+          "credentials: token || window.__OPENCHAMBER_MINIAPP_HOST__ === true ? 'omit' : 'include'",
+        );
+        transformed = transformed.replace(
+          PASSWORD_COOKIE_MARKER,
+          "credentials: window.__OPENCHAMBER_MINIAPP_HOST__ === true ? 'omit' as const : 'include' as const",
+        );
+        transformed = transformed.replace(
+          COOKIE_ONLY_LOGIN_MARKER,
+          "if (chosen.kind === 'direct' && !isCapacitorApp() && window.__OPENCHAMBER_MINIAPP_HOST__ !== true) {",
+        );
+
+        return { code: transformed, map: null };
+      }
+
+      if (sourceId.endsWith(RUNTIME_FETCH_SUFFIX)) {
+        const initOccurrences = count(code, RUNTIME_FETCH_INIT_MARKER);
+        const relayOccurrences = count(code, RUNTIME_FETCH_RELAY_MARKER);
+        if (initOccurrences !== 1 || relayOccurrences !== 1) {
+          this.error(
+            `Expected one upstream runtime-fetch init marker and relay marker, found init=${initOccurrences}, relay=${relayOccurrences}. Review the pinned OpenChamber revision before changing this adapter.`,
+          );
+        }
+
+        const withDirectoryInit = code.replace(
+          RUNTIME_FETCH_INIT_MARKER,
+          '  const directoryRequestInit = withSpaceDirectory(input, ownInit, directory);',
+        );
+        const isolatedRequestInit = `  const runtimeTarget = relayPath === null ? resolveRuntimeFetchInput(input, query) : null;
+  const isolateTelegramCookies = typeof window !== 'undefined'
+    && window.__OPENCHAMBER_MINIAPP_HOST__ === true
+    && (relayPath !== null || Boolean(runtimeTarget && shouldAttachRuntimeAuth(runtimeTarget)));
+  const requestInit = isolateTelegramCookies
+    ? { ...directoryRequestInit, credentials: 'omit' as const }
+    : directoryRequestInit;`;
+
+        return {
+          code: withDirectoryInit.replace(
+            RUNTIME_FETCH_RELAY_MARKER,
+            `${RUNTIME_FETCH_RELAY_MARKER}\n${isolatedRequestInit}`,
+          ),
+          map: null,
+        };
+      }
+
+      if (sourceId.endsWith(RUNTIME_AUTH_SUFFIX)) {
+        const cookieOccurrences = count(code, RUNTIME_AUTH_COOKIE_MARKER);
+        if (cookieOccurrences !== 2) {
+          this.error(
+            `Expected two upstream runtime-auth cookie credential markers, found ${cookieOccurrences}. Review the pinned OpenChamber revision before changing this adapter.`,
+          );
+        }
+
+        return {
+          code: code.replaceAll(
+            RUNTIME_AUTH_COOKIE_MARKER,
+            "credentials: window.__OPENCHAMBER_MINIAPP_HOST__ === true ? 'omit' : 'include',",
+          ),
+          map: null,
         };
       }
 

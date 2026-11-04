@@ -90,7 +90,27 @@ The Mini App connects to the OpenChamber instance running on your own machine. I
 
 Choose **Anywhere** rather than **Home network only** when the Telegram device must connect from outside the host's LAN. The pairing link is single-use and expires; create a fresh one if it is rejected. Each paired device receives its own client token. Revoke the paired device from OpenChamber's device/remote-instance management if access should be removed.
 
-The browser version of upstream OpenChamber persists its client token in the WebView's local storage; it does not use the native iOS Keychain or Android Keystore. Treat the Telegram WebView as a trusted device and revoke its pairing if the device/account is no longer trusted. Never share a pairing link: it contains a one-time redemption secret.
+## Telegram account ownership and credential storage
+
+The Mini App bootstraps through the authenticated `getMyInstance` Serverless endpoint. Telegram validates raw Web App init data before the endpoint runs; the backend reads the owner from `ctx.initData.user.id` and never accepts a user ID from the request body. The SQLite table `telegram_instances` uses `telegram_user_id` as its primary key, so each Telegram account owns at most one canonical OpenChamber instance.
+
+The database stores only instance metadata and transport candidates (direct URL, Private Relay URL, server ID and public relay encryption key). It never stores an OpenChamber password, client token or raw Telegram init data. The canonical instance ID is generated on the server and stays stable when additional devices update the same account mapping.
+
+The browser storage adapter namespaces upstream `localStorage` and `sessionStorage` keys by the verified Telegram user ID. On Telegram clients with SecureStorage support, the active OpenChamber client token is stored through Telegram SecureStorage (Bot API 9.0+); otherwise it remains in the account-scoped WebView namespace. Telegram documents SecureStorage as a per-bot, per-user store with a 10-item limit.
+
+The first startup after this security migration removes origin-wide legacy storage rather than guessing which Telegram account owns it. The current owner must pair again once. This prevents a legacy token from being assigned to the first account that opens the updated Mini App.
+
+### Apply the SQLite migration
+
+TGCloud code/schema deployment and database migrations are separate operations. The normal `npx tgcloud push` deploys `schema.js` but intentionally does not apply the database migration. After the new schema has been deployed to production:
+
+1. Open GitHub Actions → **Migrate Telegram Serverless database**.
+2. Run **workflow_dispatch** against `main`.
+3. Verify the migration job succeeds before relying on `/start` account status or opening the Mini App.
+
+The migration workflow is manual, restricted to `main`, and uses the `production` Environment's `ACCESS_TOKEN`. Do not run it before the schema module has been deployed. For a local authenticated CLI session, the equivalent command is `npx tgcloud fetch && npx tgcloud migrate`.
+
+Never share a pairing link: it contains a one-time redemption secret. Revoke individual device credentials from the OpenChamber host when a device is no longer trusted. Deleting the Telegram account's instance mapping does not automatically revoke credentials previously issued by that OpenChamber server.
 
 ## Runtime verification checklist
 
