@@ -21,6 +21,7 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Port upstream's manual chunk strategy; Mermaid and Markdown renderer are split from the eager bundle.
 - [x] Verify the root-path TGCloud static build (CI run 41769424938) and production deployment (run 41769613500; 944 files / 51.2 MB uploaded).
 - [x] Verify the QR scanner follow-up root build (main CI run 41771745732) and production redeployment (run 41771745665; 38 changed files / 18.0 MB uploaded).
+- [x] Add daily upstream `main` watcher with fast-forward guard, candidate typecheck/build, and a review-only PR workflow; never auto-merge or deploy from the watcher.
 - [ ] Verify navigation, chat, sessions, workspace drawer, files, changes, settings, error states, and attachments against live OpenChamber Server.
 - [ ] Verify the app in Telegram Android, iOS, Desktop, Telegram Web, and fallback browser.
 
@@ -52,7 +53,8 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Add TGCloud project config, schema, and SDK reference.
 - [x] Remove the unused starter echo handler so the first automated deployment does not echo users' messages. No chat-message handler is active until a real flow is designed.
 - [x] Enable Telegram Serverless static hosting for the Vite dist/ output; select the OpenChamber runtime through official pairing and Private Relay.
-- [x] Add GitHub Actions auto-deploy on main for the static Mini App and scoped `tgcloud/` modules using Environment secret `ACCESS_TOKEN`; fetch remote revision before targeted pushes.
+- [x] Add GitHub Actions auto-deploy on main for the static Mini App and scoped `tgcloud/` modules using Environment secret `ACCESS_TOKEN`; fetch remote revision before deployment.
+- [x] Deploy configured static `dist/` and changed `tgcloud/` modules with one `npx tgcloud push` so the frontend and modules publish atomically.
 - [x] Bind the deploy job to GitHub Environment `production`; read the environment-scoped `ACCESS_TOKEN` secret and map it to `TGCLOUD_TOKEN`.
 - [x] Keep database migrations out of the unattended deployment workflow.
 - [x] Confirm Environment `production` and Environment secret `ACCESS_TOKEN`; verify main-branch eligibility and actual TGCloud deployment (run 41769613500).
