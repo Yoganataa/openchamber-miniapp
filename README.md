@@ -27,6 +27,7 @@ cd openchamber-miniapp
 npm ci
 npm run dev
 npm run typecheck
+npm run test:serverless
 npm run build
 ```
 
