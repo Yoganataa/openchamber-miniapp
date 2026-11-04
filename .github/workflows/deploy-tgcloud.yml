@@ -23,7 +23,7 @@ jobs:
   deploy:
     name: Validate and deploy backend modules
     if: github.ref == 'refs/heads/main'
-    environment: main
+    environment: production
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
