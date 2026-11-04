@@ -19,7 +19,7 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Keep Telegram-specific boot and BackButton glue in this repository.
 - [x] Pass npm ci, host typecheck, and full Vite build (run 41729605708, commit d7a79b2), plus production /miniapp/ build (run 41729951658, commit 2de9679).
 - [x] Port upstream's manual chunk strategy; Mermaid and Markdown renderer are split from the eager bundle.
-- [ ] Verify the root-path TGCloud static build and deployment workflow on the current PR head.
+- [x] Verify the root-path TGCloud static build (CI run 41769424938) and production deployment (run 41769613500; 944 files / 51.2 MB uploaded).
 - [ ] Verify navigation, chat, sessions, workspace drawer, files, changes, settings, error states, and attachments against live OpenChamber Server.
 - [ ] Verify the app in Telegram Android, iOS, Desktop, Telegram Web, and fallback browser.
 
@@ -54,8 +54,8 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Add GitHub Actions auto-deploy on main for the static Mini App and scoped `tgcloud/` modules using Environment secret `ACCESS_TOKEN`; fetch remote revision before targeted pushes.
 - [x] Bind the deploy job to GitHub Environment `production`; read the environment-scoped `ACCESS_TOKEN` secret and map it to `TGCLOUD_TOKEN`.
 - [x] Keep database migrations out of the unattended deployment workflow.
-- [ ] Confirm Environment `production` exists, contains Environment secret `ACCESS_TOKEN`, and permits deployments only from branch `main`.
-- [ ] Verify linked-bot eligibility, SDK runtime, quotas, and deployment flow on the user's actual bot.
+- [x] Confirm Environment `production` and Environment secret `ACCESS_TOKEN`; verify main-branch eligibility and actual TGCloud deployment (run 41769613500).
+- [ ] Verify Telegram Serverless SDK runtime and quotas on the user's actual bot.
 - [ ] Add threat model and data-retention policy.
 - [ ] Add initData-verified endpoints only if a real backend identity-mapping requirement exists.
 - [x] Reuse the official OpenChamber Private Relay; do not implement a second relay or custom API proxy in this project.
