@@ -1,6 +1,8 @@
 const MAX_LABEL_LENGTH = 80;
 const MAX_CANDIDATES = 12;
 const MAX_URL_LENGTH = 2048;
+const SENSITIVE_QUERY_PARAMETER =
+  /(?:access[_-]?token|token|api[_-]?key|secret|password|credential|authorization|^auth$|^grant$|^sig(?:nature)?$|^jwt$)/i;
 
 const isRecord = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -10,15 +12,32 @@ const boundedString = (value, maxLength) =>
     ? value.trim()
     : null;
 
-const parseUrl = (value, protocols) => {
+const normalizeLabel = (value) => {
+  if (typeof value !== 'string') return null;
+  const label = value.trim();
+  return label ? label.slice(0, MAX_LABEL_LENGTH) : null;
+};
+
+const parseUrl = (value, protocols, { allowQuery = false, preserveTrailingSlash = false } = {}) => {
   if (!boundedString(value, MAX_URL_LENGTH)) return null;
 
   try {
     const parsed = new URL(value);
     if (!protocols.includes(parsed.protocol)) return null;
     if (!parsed.hostname || parsed.username || parsed.password) return null;
-    if (parsed.search || parsed.hash) return null;
-    return parsed.toString().replace(/\/$/, '');
+
+    // OpenChamber's pairing-v2 parser preserves harmless relay query parameters
+    // but strips URL fragments. Keep that contract while refusing query keys
+    // that could turn a transport URL into a credential store.
+    if (parsed.search) {
+      if (!allowQuery) return null;
+      for (const key of parsed.searchParams.keys()) {
+        if (SENSITIVE_QUERY_PARAMETER.test(key)) return null;
+      }
+    }
+    parsed.hash = '';
+    const normalized = parsed.toString();
+    return preserveTrailingSlash ? normalized : normalized.replace(/\/+$/g, '');
   } catch {
     return null;
   }
@@ -33,7 +52,10 @@ const normalizeDirectCandidate = (candidate) => {
 const normalizeRelayCandidate = (candidate) => {
   if (!isRecord(candidate) || candidate.kind !== 'relay' || !isRecord(candidate.relay)) return null;
 
-  const relayUrl = parseUrl(candidate.relay.relayUrl, ['ws:', 'wss:']);
+  const relayUrl = parseUrl(candidate.relay.relayUrl, ['ws:', 'wss:'], {
+    allowQuery: true,
+    preserveTrailingSlash: true,
+  });
   const serverId = boundedString(candidate.relay.serverId, 128);
   const jwk = candidate.relay.hostEncPubJwk;
 
@@ -58,7 +80,9 @@ export const normalizeInstanceInput = (input) => {
   if (!isRecord(input) || !Array.isArray(input.candidates)) return null;
   if (input.candidates.length < 1 || input.candidates.length > MAX_CANDIDATES) return null;
 
-  const label = boundedString(input.label, MAX_LABEL_LENGTH);
+  // The upstream pairing label is operator-controlled. Bound it here instead
+  // of rejecting an otherwise valid pairing just because the label is long.
+  const label = normalizeLabel(input.label);
   if (!label) return null;
 
   const candidates = input.candidates.map((candidate) => {

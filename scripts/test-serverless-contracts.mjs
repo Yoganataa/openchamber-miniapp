@@ -36,6 +36,52 @@ assert.deepEqual(normalized, {
 assert.equal(Object.hasOwn(normalized, 'clientToken'), false);
 assert.equal(Object.hasOwn(normalized, 'instanceId'), false);
 
+// Pairing-v2 normalizes WebSocket URLs by removing fragments while preserving
+// non-secret query parameters. The account metadata validator must accept the
+// same transport shape rather than rejecting a successful pairing at save time.
+const relayWithRoutingQuery = normalizeInstanceInput({
+  label: 'Relay query',
+  candidates: [{
+    kind: 'relay',
+    relay: {
+      ...relayCandidate.relay,
+      relayUrl: 'wss://relay.example/ws?transport=websocket#discard-me',
+    },
+  }],
+});
+assert.equal(
+  relayWithRoutingQuery?.candidates[0]?.relay.relayUrl,
+  'wss://relay.example/ws?transport=websocket',
+);
+
+const relayWithTrailingPath = normalizeInstanceInput({
+  label: 'Relay trailing path',
+  candidates: [{
+    kind: 'relay',
+    relay: {
+      ...relayCandidate.relay,
+      relayUrl: 'wss://relay.example/ws/',
+    },
+  }],
+});
+assert.equal(relayWithTrailingPath?.candidates[0]?.relay.relayUrl, 'wss://relay.example/ws/');
+assert.equal(normalizeInstanceInput({
+  label: 'Relay credential query',
+  candidates: [{
+    kind: 'relay',
+    relay: {
+      ...relayCandidate.relay,
+      relayUrl: 'wss://relay.example/ws?access_token=secret',
+    },
+  }],
+}), null);
+
+const longLabel = normalizeInstanceInput({
+  label: ` ${'A'.repeat(100)} `,
+  candidates: [directCandidate],
+});
+assert.equal(longLabel?.label.length, 80);
+
 assert.equal(normalizeInstanceInput({
   label: 'Credential URL',
   candidates: [{ kind: 'direct', url: 'https://user:password@host.example' }],
@@ -219,12 +265,24 @@ for (const endpoint of [getEndpoint, saveEndpoint, deleteEndpoint]) {
 assert.match(saveEndpoint, /onConflictDoUpdate/);
 assert.match(saveEndpoint, /instanceId:\s*crypto\.randomUUID\(\)/);
 
+// Host startup must render accessible progress before the upstream renderer mounts.
 const hostEntry = await readFile(new URL('../src/main.tsx', import.meta.url), 'utf8');
+const htmlEntry = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const telegramBridge = await readFile(new URL('../src/vite/telegram-back-button-plugin.ts', import.meta.url), 'utf8');
+const qrAdapter = await readFile(new URL('../src/lib/telegram/qr-scan.ts', import.meta.url), 'utf8');
+assert.match(hostEntry, /setStartupStatus/);
+assert.match(hostEntry, /renderStartupError/);
+assert.match(hostEntry, /telegram-instance-sync/);
+assert.match(htmlEntry, /miniapp-startup__spinner/);
+assert.match(htmlEntry, /data-startup-title/);
+assert.match(qrAdapter, /parsePairingConnectionPayloadString/);
+assert.match(qrAdapter, /parseTelegramQrPayload/);
 assert.match(telegramBridge, /RUNTIME_FETCH_SUFFIX/);
 assert.match(telegramBridge, /RUNTIME_FETCH_RELAY_MARKER/);
 assert.match(telegramBridge, /credentials: 'omit' as const/);
 assert.match(telegramBridge, /COOKIE_ONLY_LOGIN_MARKER/);
+assert.match(telegramBridge, /telegramSyncFailed/);
+assert.match(telegramBridge, /PAIRING_ERROR_MARKER/);
 assert.match(telegramBridge, /window\.__OPENCHAMBER_MINIAPP_HOST__ !== true/);
 assert.match(hostEntry, /sharedRelayIdentity/);
 assert.match(hostEntry, /local\.id === instance\.instanceId/);
@@ -234,4 +292,4 @@ assert.match(handler, /api\.sendRichMessage/);
 assert.match(handler, /message\?\.chat\?\.type !== 'private'/);
 assert.match(handler, /isStartCommand\(message\.text\)/);
 
-process.stdout.write('✓ Serverless account ownership and Bot API 10.3 RichMessage contracts validated.\n');
+process.stdout.write('✓ Serverless ownership, QR pairing validation, startup UI, and RichMessage contracts validated.\n');
