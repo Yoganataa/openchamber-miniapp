@@ -44,7 +44,15 @@ The Mini App uses the official pairing-v2 parser and redemption flow from upstre
 
 When the relay candidate is selected, the upstream browser runtime routes HTTP, streaming responses and WebSockets through the end-to-end encrypted relay tunnel. The TGCloud origin is the static frontend origin; it is not treated as the OpenChamber API origin. No wildcard CORS exception or unauthenticated relay is added by this repository.
 
-The browser version stores its client token in WebView local storage. Native Capacitor clients use Keychain/Keystore, but those native secure-storage APIs are not available to this Telegram browser host. Device access must be revoked from the OpenChamber host when no longer trusted.
+The Telegram host installs `src/lib/telegram/account-storage.ts` before importing the upstream mobile entry. It namespaces upstream `localStorage` and `sessionStorage` keys by the verified Telegram user ID. This preserves the upstream synchronous storage contract without allowing two Telegram accounts to share the same WebView keys.
+
+The backend SQLite row is the source of truth for account ownership. `telegram_user_id` is the primary key and one stable server-generated `instance_id` maps to the user's single OpenChamber server. Connection metadata is synchronized through `getMyInstance`, `saveMyInstance` and `deleteMyInstance` endpoints. Each endpoint derives the owner exclusively from Telegram Serverless' verified `ctx.initData.user.id`.
+
+The OpenChamber client token is not part of the SQLite row or any endpoint request. When Telegram SecureStorage is available (Bot API 9.0+), the host keeps the token there. The compatibility fallback stores it inside the Telegram-user namespace. The adapter also removes old origin-wide storage keys on first startup after migration, rather than assigning a pre-existing connection to an arbitrary Telegram account. A user must pair again after this one-time cleanup.
+
+The upstream connection flow's cookie-based session behavior is disabled for this host. This prevents a cookie from an earlier account from authenticating a different Telegram account. The adapter awaits secure credential writes and the account-mapping endpoint before the upstream flow switches into the connected runtime.
+
+Device access must still be revoked from the OpenChamber host when no longer trusted. Deleting the account mapping alone cannot revoke a client token already issued by the OpenChamber Server.
 
 ## Telegram QR scanner adapter
 
