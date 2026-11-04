@@ -44,10 +44,17 @@ export const scanTelegramConnectionQr = (
   options?: { signal?: AbortSignal },
 ): Promise<QrScanResult> => {
   const webApp = getTelegramWebApp();
-  if (!isTelegramQrScanSupported() || !webApp?.showScanQrPopup || !webApp.closeScanQrPopup) {
+  if (
+    !webApp?.showScanQrPopup ||
+    !webApp.closeScanQrPopup ||
+    !webApp.onEvent ||
+    !webApp.offEvent ||
+    !webApp.isVersionAtLeast?.('7.7')
+  ) {
     return Promise.resolve({ status: 'unsupported' });
   }
 
+  const showScanQrPopup = webApp.showScanQrPopup.bind(webApp);
   const signal = options?.signal;
   if (signal?.aborted) return Promise.resolve({ status: 'cancelled' });
 
@@ -79,7 +86,7 @@ export const scanTelegramConnectionQr = (
     signal?.addEventListener('abort', handleAbort, { once: true });
 
     try {
-      webApp.showScanQrPopup(
+      showScanQrPopup(
         { text: 'Scan an OpenChamber QR code' },
         (text) => {
           if (settled) return true;
