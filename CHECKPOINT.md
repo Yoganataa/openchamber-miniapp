@@ -3,8 +3,8 @@
 Last audited: 2026-11-04
 Repository: https://github.com/Yoganataa/openchamber-miniapp
 Default branch: main
-Working branch: feat/upstream-openchamber-mobile-ui
-Open PR: https://github.com/Yoganataa/openchamber-miniapp/pull/1 (draft)
+Working branch: main
+PR #1 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/1
 
 ## Current state
 
@@ -16,16 +16,17 @@ Open PR: https://github.com/Yoganataa/openchamber-miniapp/pull/1 (draft)
 - The upstream native QR scanner requires a Capacitor plugin. Telegram Mini App uses the browser runtime, so the current build presents the manual field and accepts a copied `openchamber://connect?...` one-time pairing link. A browser camera scanner remains outstanding.
 - Choose **Anywhere** in OpenChamber's Add a device flow to include the official Private Relay transport. The Mini App uses the upstream pairing redemption and E2E relay implementation; it does not need a separately hosted OpenChamber API or custom relay.
 - TGCloud static hosting is configured to publish Vite `dist/` at the root. TGCloud backend modules remain optional and scoped under `tgcloud/`.
+- Production deployment completed successfully on 2026-11-04 via GitHub Actions run 41769613500 at merge commit `daabac4cb111faadfe2b6393bcea46fa65b4d242`.
+- TGCloud published 944 static files (51.2 MB) and registered the optional `tgcloud/schema.js` module. The CLI-reported Mini App URL is `https://app8984347139.tgcloud.ai/`.
+- The production deploy workflow successfully consumed Environment secret `ACCESS_TOKEN` through the `TGCLOUD_TOKEN` mapping. Main-branch CI run 41769613483 also passed `npm ci`, host typecheck, and the root-path build.
 - The deploy workflow targets GitHub Environment `production`, maps `secrets.ACCESS_TOKEN` to CLI variable `TGCLOUD_TOKEN`, then pushes `dist/` and `tgcloud/` using targeted commands without `--force` or database migrations.
 - Environment `production` and secret `ACCESS_TOKEN` were shown by the user; allowed deployment branch is `main`. Secret values are not inspected.
 - Browser upstream persistence stores the issued client token in Telegram WebView local storage, unlike native app Keychain/Keystore. Revoke the paired device from the OpenChamber host when it should no longer have access.
-- Previous passing build: run 41767263134 on commit 8312d1d, before TGCloud static hosting and pairing-first browser changes. It is not verification of the current implementation.
-- Current PR #1 remains draft and unmerged. The new root-build CI must pass before merging and triggering TGCloud deployment.
 - Earlier npm install reported 10 dependency audit findings (5 low, 4 high, 1 critical). Review advisories before release; do not run `npm audit fix --force`.
 
 ## Active phase
 
-Phase 2 — Telegram pairing and remote runtime verification. Official UI adoption is implemented. The TGCloud root-hosting and browser pairing changes are in PR #1; current-head CI and the first live deployment have not yet been verified.
+Phase 2 — Telegram pairing and remote runtime verification. Official UI adoption, TGCloud static publication, and the production deployment are complete. Real Telegram pairing and live OpenChamber workflow tests remain.
 
 ## Completed implementation
 
@@ -39,14 +40,13 @@ Phase 2 — Telegram pairing and remote runtime verification. Official UI adopti
 
 ## Remaining work
 
-1. Verify current PR CI: `npm ci`, host typecheck and root-path production Vite build.
-2. Merge PR #1 after CI passes, then verify the production TGCloud workflow and capture the exact static URL printed by the CLI.
-3. Register that exact URL as the bot's Main Mini App URL in BotFather; optionally set the menu button to the same URL.
-4. On the OpenChamber host, create a new device pairing with **Anywhere**. Open the Telegram Mini App and paste the complete one-time `openchamber://connect?...` link into the manual connection field.
-5. Verify pairing redemption, Private Relay connection, sessions, chat streaming, cancellation/reconnect, files, diffs and WebSocket-backed features.
-6. Verify BackButton, theme, viewport, safe area and keyboard behavior in Telegram Android, iOS, Desktop and Telegram Web.
-7. Consider browser camera QR scanning separately; do not claim it is supported by the current browser build.
-8. Review npm audit advisories, performance, accessibility and release/rollback procedures.
+1. Configure BotFather's Main Mini App URL as `https://app8984347139.tgcloud.ai/`; optionally configure the menu button to the same URL.
+2. Start OpenChamber Server on the user's machine. In **Settings → Remote Instances → Connect to this server → Add a device**, choose **Anywhere**, then create the QR/link.
+3. Use the pairing dialog's **Copy** button beside **Connection link**. Open the Telegram Mini App and paste the complete one-time `openchamber://connect?...` link into the manual connection field. It should redeem the pairing automatically.
+4. User to verify pairing redemption and Private Relay connectivity, then exercise sessions, chat streaming, cancellation/reconnect, files, diffs and WebSocket-backed features; capture feedback and any errors.
+5. Verify BackButton, theme, viewport, safe area and keyboard behavior in Telegram Android, iOS, Desktop and Telegram Web.
+6. Consider browser camera QR scanning separately; do not claim it is supported by the current browser build.
+7. Review npm audit advisories, performance, accessibility and release/rollback procedures.
 
 ## Architecture and security boundaries
 
