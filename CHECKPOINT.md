@@ -3,9 +3,9 @@
 Last audited: 2026-11-04
 Repository: https://github.com/Yoganataa/openchamber-miniapp
 Default branch: main
-Working branch: feat/upstream-auto-sync
+Working branch: main
 PR #1 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/1
-PR #3 open: https://github.com/Yoganataa/openchamber-miniapp/pull/3 (upstream sync + TGCloud deploy workflow improvements; activation pending merge)
+PR #3 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/3 (merge commit `9f3ea4c8c20f92f2df747f39ba39d31f5e966c3a`)
 
 ## Current state
 
@@ -28,7 +28,7 @@ PR #3 open: https://github.com/Yoganataa/openchamber-miniapp/pull/3 (upstream sy
 
 ## Upstream maintenance
 
-- Proposed in PR #3: `.github/workflows/upstream-sync.yml` checks `openchamber/openchamber:main` daily at 02:17 UTC and on manual dispatch. It becomes active on `main` only after PR #3 is merged.
+- `.github/workflows/upstream-sync.yml` is active on `main` after PR #3 was merged. It checks `openchamber/openchamber:main` daily at 02:17 UTC and supports manual dispatch.
 - The watcher uses the GitHub compare API to require a fast-forward from the current pin, validates the candidate with `npm ci`, `npm run typecheck`, and `npm run build`, then creates or updates `automation/openchamber-upstream` and a review PR.
 - The watcher never merges or deploys. Merging the PR into `main` triggers the production workflow. The current pin remains `1e74724fc04026e3666f0802a6040f0f24c74226` (2.6.0); at audit time upstream `main` is 18 commits ahead and identifies as 2.6.1.
 - Production publishing now uses the official TGCloud full-project push: build, `npx tgcloud fetch`, then one `npx tgcloud push` to publish the configured `dist/` static site and changed `tgcloud/` modules atomically. It does not run migrations or use `--force`.
