@@ -35,5 +35,5 @@ jobs:
       - name: Typecheck Telegram host adapter
         run: npm run typecheck
 
-      - name: Build full upstream mobile client for same-origin /miniapp/
-        run: npm run build:miniapp:same-origin
+      - name: Build Telegram Mini App for TGCloud root hosting
+        run: npm run build
