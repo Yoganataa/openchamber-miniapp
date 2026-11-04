@@ -245,13 +245,13 @@ const [schema, getEndpoint, saveEndpoint, deleteEndpoint, handler] = await Promi
   readFile(new URL('../tgcloud/handlers/message.js', import.meta.url), 'utf8'),
 ]);
 
-assert.match(schema, /telegramUserId:\\s*integer\\('telegram_user_id'\\)\\.primaryKey\\(\\)/);
+assert.match(schema, /telegramUserId:\s*integer\('telegram_user_id'\)\.primaryKey\(\)/);
 for (const endpoint of [getEndpoint, saveEndpoint, deleteEndpoint]) {
-  assert.match(endpoint, /ctx\\?\\.initData\\?\\.user\\?\\.id/);
-  assert.doesNotMatch(endpoint, /input\\.telegramUserId|input\\.userId/);
+  assert.match(endpoint, /ctx\?\.initData\?\.user\?\.id/);
+  assert.doesNotMatch(endpoint, /input\.telegramUserId|input\.userId/);
 }
 assert.match(saveEndpoint, /onConflictDoUpdate/);
-assert.match(saveEndpoint, /instanceId:\\s*crypto\\.randomUUID\\(\\)/);
+assert.match(saveEndpoint, /instanceId:\s*crypto\.randomUUID\(\)/);
 
 // Host startup must render accessible progress before the upstream renderer mounts.
 const hostEntry = await readFile(new URL('../src/main.tsx', import.meta.url), 'utf8');
@@ -270,13 +270,13 @@ assert.match(telegramBridge, /RUNTIME_FETCH_RELAY_MARKER/);
 assert.match(telegramBridge, /credentials: 'omit' as const/);
 assert.match(telegramBridge, /COOKIE_ONLY_LOGIN_MARKER/);
 assert.match(telegramBridge, /telegramSyncFailed/);
-assert.match(telegramBridge, /window\\.__OPENCHAMBER_MINIAPP_HOST__ !== true/);
+assert.match(telegramBridge, /window\.__OPENCHAMBER_MINIAPP_HOST__ !== true/);
 assert.match(hostEntry, /sharedRelayIdentity/);
-assert.match(hostEntry, /local\\.id === instance\\.instanceId/);
-assert.doesNotMatch(hostEntry, /if \\(!isRecord\\(local\\) \\|\\| local\\.id !== instance\\.instanceId\\)/);
+assert.match(hostEntry, /local\.id === instance\.instanceId/);
+assert.doesNotMatch(hostEntry, /if \(!isRecord\(local\) \|\| local\.id !== instance\.instanceId\)/);
 assert.doesNotMatch(saveEndpoint, /clientToken/);
-assert.match(handler, /api\\.sendRichMessage/);
-assert.match(handler, /message\\?\\.chat\\?\\.type !== 'private'/);
-assert.match(handler, /isStartCommand\\(message\\.text\\)/);
+assert.match(handler, /api\.sendRichMessage/);
+assert.match(handler, /message\?\.chat\?\.type !== 'private'/);
+assert.match(handler, /isStartCommand\(message\.text\)/);
 
-process.stdout.write('✓ Serverless ownership, QR pairing validation, startup UI, and RichMessage contracts validated.\\n');
+process.stdout.write('✓ Serverless ownership, QR pairing validation, startup UI, and RichMessage contracts validated.\n');
