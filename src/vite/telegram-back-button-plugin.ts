@@ -10,6 +10,8 @@ const MINIAPP_ENTRY_AUTH_MARKER =
 const MOBILE_QR_SCAN_IMPORT_MARKER = "import { isQrScanSupported, parseConnectionPayload, scanConnectionQr } from './mobileQrScan';";
 const MINIAPP_PAIRING_HINT_MARKER =
   '                  <form className="flex w-full flex-col gap-3 pt-3" onSubmit={handleSubmit}>';
+const CONNECT_ERROR_MARKER =
+  "setError(t(error instanceof MobileHeaderStorageError ? 'mobile.connect.headers.error' : 'mobile.connect.error.invalidUrl'));";
 
 const MOBILE_APP_SUFFIX = '/packages/ui/src/apps/MobileApp.tsx';
 const MOBILE_ENTRY_SUFFIX = '/packages/ui/src/apps/renderMobileApp.tsx';
@@ -126,18 +128,20 @@ export function telegramBackButtonPlugin(): Plugin {
         const cookieOccurrences = count(code, ACCOUNT_COOKIE_MARKER);
         const passwordCookieOccurrences = count(code, PASSWORD_COOKIE_MARKER);
         const cookieOnlyLoginOccurrences = count(code, COOKIE_ONLY_LOGIN_MARKER);
-        if (cookieOccurrences !== 2 || passwordCookieOccurrences !== 1 || cookieOnlyLoginOccurrences !== 1) {
+        const connectErrorOccurrences = count(code, CONNECT_ERROR_MARKER);
+        if (cookieOccurrences !== 2 || passwordCookieOccurrences !== 1 ||
+          cookieOnlyLoginOccurrences !== 1 || connectErrorOccurrences !== 1) {
           this.error(
-            `Expected two tokenless-session cookie guards, one password-login cookie guard, and one cookie-only login fallback, found session=${cookieOccurrences}, password=${passwordCookieOccurrences}, fallback=${cookieOnlyLoginOccurrences}.`,
+            `Expected two tokenless-session cookie guards, one password-login cookie guard, one cookie-only login fallback, and one connection error handler, found session=${cookieOccurrences}, password=${passwordCookieOccurrences}, fallback=${cookieOnlyLoginOccurrences}, error=${connectErrorOccurrences}.`,
           );
         }
 
         let transformed = code;
         for (const marker of ACCOUNT_SAVE_MARKERS) {
-          const indentation = marker.match(/^\s*/)?.[0] ?? '';
+          const indentation = marker.match(/^\\s*/)?.[0] ?? '';
           transformed = transformed.replace(
             marker,
-            `${marker}\n${indentation}await window.__OPENCHAMBER_SYNC_INSTANCE__?.();`,
+            `${marker}\\n${indentation}await window.__OPENCHAMBER_SYNC_INSTANCE__?.();`,
           );
         }
 
@@ -152,6 +156,13 @@ export function telegramBackButtonPlugin(): Plugin {
         transformed = transformed.replace(
           COOKIE_ONLY_LOGIN_MARKER,
           "if (chosen.kind === 'direct' && !isCapacitorApp() && window.__OPENCHAMBER_MINIAPP_HOST__ !== true) {",
+        );
+        transformed = transformed.replace(
+          CONNECT_ERROR_MARKER,
+          `const telegramSyncFailed = error instanceof Error && error.message.startsWith('[telegram-instance-sync]');
+      setError(telegramSyncFailed
+        ? 'The connection could not be saved to your Telegram account. Try again. If pairing already completed, create a fresh QR code.'
+        : t(error instanceof MobileHeaderStorageError ? 'mobile.connect.headers.error' : 'mobile.connect.error.invalidUrl'));`,
         );
 
         return { code: transformed, map: null };
@@ -181,7 +192,7 @@ export function telegramBackButtonPlugin(): Plugin {
         return {
           code: withDirectoryInit.replace(
             RUNTIME_FETCH_RELAY_MARKER,
-            `${RUNTIME_FETCH_RELAY_MARKER}\n${isolatedRequestInit}`,
+            `${RUNTIME_FETCH_RELAY_MARKER}\\n${isolatedRequestInit}`,
           ),
           map: null,
         };
