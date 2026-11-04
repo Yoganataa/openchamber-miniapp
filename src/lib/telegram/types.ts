@@ -7,6 +7,16 @@ export interface TelegramWebApp {
   colorScheme: 'light' | 'dark';
   themeParams: Record<string, string>;
   version: string;
+  viewportHeight?: number;
+  viewportStableHeight?: number;
+  onEvent?(
+    event: 'themeChanged' | 'viewportChanged' | 'backButtonClicked',
+    callback: () => void,
+  ): void;
+  offEvent?(
+    event: 'themeChanged' | 'viewportChanged' | 'backButtonClicked',
+    callback: () => void,
+  ): void;
   BackButton?: {
     show(): void;
     hide(): void;

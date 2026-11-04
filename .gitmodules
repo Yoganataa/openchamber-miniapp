@@ -1,0 +1,4 @@
+[submodule "vendor/openchamber"]
+	path = vendor/openchamber
+	url = https://github.com/openchamber/openchamber.git
+	shallow = true
