@@ -119,6 +119,11 @@ for (const endpoint of [getEndpoint, saveEndpoint, deleteEndpoint]) {
 }
 assert.match(saveEndpoint, /onConflictDoUpdate/);
 assert.match(saveEndpoint, /instanceId:\s*crypto\.randomUUID\(\)/);
+
+const hostEntry = await readFile(new URL('../src/main.tsx', import.meta.url), 'utf8');
+assert.match(hostEntry, /sharedRelayIdentity/);
+assert.match(hostEntry, /local\.id === instance\.instanceId/);
+assert.doesNotMatch(hostEntry, /if \(!isRecord\(local\) \|\| local\.id !== instance\.instanceId\)/);
 assert.doesNotMatch(saveEndpoint, /clientToken/);
 assert.match(handler, /api\.sendRichMessage/);
 assert.match(handler, /message\?\.chat\?\.type !== 'private'/);
