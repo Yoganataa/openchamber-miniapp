@@ -18,6 +18,42 @@ type InstanceBootstrap = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
+const setStartupStatus = (title: string, description: string): void => {
+  const root = document.getElementById('root');
+  if (!root) return;
+  const titleElement = root.querySelector<HTMLElement>('[data-startup-title]');
+  const descriptionElement = root.querySelector<HTMLElement>('[data-startup-description]');
+  if (titleElement) titleElement.textContent = title;
+  if (descriptionElement) descriptionElement.textContent = description;
+};
+
+const renderStartupError = (error: unknown): void => {
+  const root = document.getElementById('root');
+  if (!root) return;
+
+  root.innerHTML = `
+    <main class="miniapp-startup-error" role="alert">
+      <section class="miniapp-startup-error__card">
+        <div class="miniapp-startup-error__icon" aria-hidden="true">!</div>
+        <p class="miniapp-startup-error__eyebrow">OPENCHAMBER MINI APP</p>
+        <h1>Could not open your workspace</h1>
+        <p class="miniapp-startup-error__message" data-startup-error-message></p>
+        <button class="miniapp-startup-error__retry" type="button" data-startup-retry>Try again</button>
+        <p class="miniapp-startup-error__hint">Your account data is kept separate. Reload the Mini App to retry verification.</p>
+      </section>
+    </main>
+  `;
+
+  const message = error instanceof Error
+    ? error.message
+    : 'OpenChamber Mini App could not start. Reload and try again.';
+  const messageElement = root.querySelector<HTMLElement>('[data-startup-error-message]');
+  if (messageElement) messageElement.textContent = message;
+  root.querySelector<HTMLButtonElement>('[data-startup-retry]')
+    ?.addEventListener('click', () => window.location.reload());
+  root.setAttribute('aria-busy', 'false');
+};
+
 const candidateIdentityKeys = (candidates: unknown): Set<string> => {
   if (!Array.isArray(candidates)) return new Set();
   const keys = new Set<string>();
@@ -78,7 +114,7 @@ const persistInstanceSnapshot = async (
   }
 
   const label = typeof candidate.label === 'string' && candidate.label.trim()
-    ? candidate.label.trim()
+    ? candidate.label.trim().slice(0, 80)
     : 'OpenChamber Server';
 
   const result = await callTelegramServerless<{ saved: boolean; instanceId: string }>(telegram, 'saveMyInstance', {
@@ -164,17 +200,23 @@ const initializeStorageSync = (
   window.__OPENCHAMBER_SYNC_INSTANCE__ = async () => {
     await storage.flushCredentials();
     await syncQueue;
-    if (lastError) throw lastError;
+    if (lastError) {
+      console.error('[openchamber-miniapp] Telegram instance sync failed', lastError);
+      const detail = lastError instanceof Error ? lastError.message : String(lastError);
+      throw new Error(`[telegram-instance-sync] ${detail}`);
+    }
     if (persistedRevision < revision) {
-      throw new Error('The latest OpenChamber instance update has not been saved.');
+      throw new Error('[telegram-instance-sync] The latest OpenChamber instance update has not been saved.');
     }
   };
 };
 
 async function start() {
   window.__OPENCHAMBER_MINIAPP_HOST__ = true;
-  const root = document.getElementById('root');
-  if (root) root.textContent = 'Verifying Telegram account…';
+  setStartupStatus(
+    'Verifying your Telegram account',
+    'Checking your Telegram session and permissions.',
+  );
 
   const telegram = initializeTelegramWebApp();
 
@@ -198,6 +240,7 @@ async function start() {
     if (!import.meta.env.DEV) {
       throw new Error('Open this Mini App from its Telegram bot.');
     }
+    setStartupStatus('Preparing development preview', 'Starting the OpenChamber mobile interface.');
     const developmentStorage = await installTelegramAccountStorage({}, 1);
     reconcileLocalInstance(developmentStorage, null);
     initializeStorageSync(null, developmentStorage);
@@ -209,6 +252,8 @@ async function start() {
     throw new Error('Telegram account verification is unavailable. Open the app from the bot in Telegram.');
   }
 
+  setStartupStatus('Loading your account', 'Retrieving the connection settings for this Telegram account.');
+
   // getMyInstance is an authenticated Telegram Serverless endpoint. Its returned
   // ID is the verified identity used to partition all browser storage.
   const bootstrap = await callTelegramServerless<InstanceBootstrap>(telegram, 'getMyInstance', {});
@@ -216,10 +261,12 @@ async function start() {
     throw new Error('Telegram did not provide a verified account identity.');
   }
 
+  setStartupStatus('Preparing your workspace', 'Setting up private storage for this Telegram account.');
   const storage = await installTelegramAccountStorage(telegram, bootstrap.telegramUserId);
   reconcileLocalInstance(storage, bootstrap.instance ?? null);
   initializeStorageSync(telegram, storage);
 
+  setStartupStatus('Opening OpenChamber', 'Loading the official mobile workspace.');
   // The official mobile renderer and browser RuntimeAPIs remain the UI source
   // of truth. The host adapter isolates its storage and persists ownership
   // before any successful pairing/login transitions into the runtime.
@@ -228,9 +275,5 @@ async function start() {
 
 void start().catch((error: unknown) => {
   console.error('[openchamber-miniapp] startup failed', error);
-  const root = document.getElementById('root');
-  if (!root) return;
-  root.textContent = error instanceof Error
-    ? error.message
-    : 'OpenChamber Mini App could not start. Reload and try again.';
+  renderStartupError(error);
 });
