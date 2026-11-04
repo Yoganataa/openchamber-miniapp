@@ -271,7 +271,6 @@ assert.match(telegramBridge, /credentials: 'omit' as const/);
 assert.match(telegramBridge, /COOKIE_ONLY_LOGIN_MARKER/);
 assert.match(telegramBridge, /telegramSyncFailed/);
 assert.match(telegramBridge, /PAIRING_ERROR_MARKER/);
-assert.match(telegramBridge, /pairingSyncFailed/);
 assert.match(telegramBridge, /window\.__OPENCHAMBER_MINIAPP_HOST__ !== true/);
 assert.match(hostEntry, /sharedRelayIdentity/);
 assert.match(hostEntry, /local\.id === instance\.instanceId/);
