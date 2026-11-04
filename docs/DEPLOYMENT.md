@@ -104,7 +104,7 @@ The deployment job explicitly targets the GitHub Environment named `production`.
 - Secret name: `ACCESS_TOKEN`
 - Secret value: the Telegram Serverless CLI Access Token from BotFather → your bot → Serverless → CLI Access.
 
-In GitHub, open **Settings → Environments → production → Environment secrets → Add secret**. The workflow references it as `secrets.TGCLOUD_TOKEN`; environment secrets are only made available to jobs that declare the matching `environment`. Do not paste the value into the repository, a workflow file, or chat.
+In GitHub, open **Settings → Environments → production → Environment secrets → Add secret**. The workflow maps it with `TGCLOUD_TOKEN: ${{ secrets.ACCESS_TOKEN }}`; environment secrets are only made available to jobs that declare the matching `environment`. Do not paste the value into the repository, a workflow file, or chat.
 
 For a production-only target, set **Deployment branches and tags** to **Selected branches and tags**, then allow the branch `main`. The workflow itself also gates the deployment job to `refs/heads/main`, so manual dispatch from another branch will not deploy. If the environment has required reviewers or a wait timer, the job will wait for those protection rules before the secret becomes available.
 
@@ -113,7 +113,7 @@ For a production-only target, set **Deployment branches and tags** to **Selected
 Create an **Environment secret** with this exact name in the GitHub Environment `production`:
 
 ```text
-TGCLOUD_TOKEN
+ACCESS_TOKEN
 ```
 
 Its value must be the **Telegram Serverless CLI Access Token** from BotFather → your bot → Serverless → CLI Access → Access token. This is distinct from the Telegram Bot API token. The workflow maps the Environment secret `ACCESS_TOKEN` to the CLI-required variable `TGCLOUD_TOKEN` and does not write the value into `.tgcloud/credentials` or the repository. The workflow passes it only to the deployment step.
