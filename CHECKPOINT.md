@@ -3,7 +3,7 @@
 Last audited: 2026-11-04
 Repository: https://github.com/Yoganataa/openchamber-miniapp
 Default branch: main
-Latest main commit: `bbb2fc72b58fa819d8bb362af9a35b00257f6763`
+Last audited main head: `b3b10d6a18e717e92c8bb6818d3d2782a760ae05`
 Working branch: none (Phase 2 implementation PRs are merged)
 PR #1 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/1
 PR #2 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/2 (merge commit `b929a9d6384c515c6592ae3ddf7ebe6de1ea5038`)
@@ -14,7 +14,7 @@ PR #5 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/5 (merge com
 ## Current state
 
 - Telegram account-isolation implementation from PR #4 is merged into `main` (merge commit `d5e1931`). PR #5 is also merged into `main` (merge commit `eee2285`), fixing pairing-v2 QR parsing, relay URL metadata normalization, account-sync error classification, and the startup/error presentation.
-- PR #5 CI run 41808417355 passed workflow validation, Serverless/RichMessage contracts, host typecheck, and the root-path production build. Post-merge `main` CI run 41864367356 and TGCloud deployment run 41864367277 both completed successfully. The app deployment is successful; the separate production database migration is not.
+- PR #5 CI run 41808417355 passed workflow validation, Serverless/RichMessage contracts, host typecheck, and the root-path production build. Post-merge `main` CI run 41864367356 and TGCloud deployment run 41864367277 both completed successfully. The safe-migration workflow fix also passed main CI run 41872648955 and its production static deployment run 41872648961. The app deployment is successful; the separate production database migration is not.
 - New backend contract: one `telegram_instances` row per verified Telegram user ID, with `telegram_user_id` as the SQLite primary key and a stable server-generated instance ID. The database contains transport metadata only; it never stores OpenChamber client tokens.
 - New Serverless endpoints: `getMyInstance`, `saveMyInstance`, and `deleteMyInstance`. Each endpoint reads the owner exclusively from verified `ctx.initData.user.id`.
 - The Mini App host namespaces upstream browser storage by verified Telegram account, uses Telegram SecureStorage for per-device client credentials where supported, purges legacy origin-wide keys, forces `credentials: omit` for all active OpenChamber runtime requests (direct and Private Relay), rejects cookie-only login, and waits for account mapping/credential persistence before pairing or login completes.
@@ -30,7 +30,7 @@ PR #5 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/5 (merge com
 - Choose **Anywhere** in OpenChamber's Add a device flow to include the official Private Relay transport. The Mini App uses the upstream pairing redemption and E2E relay implementation; it does not need a separately hosted OpenChamber API or custom relay.
 - TGCloud static hosting is configured to publish Vite `dist/` at the root. TGCloud backend modules remain optional and scoped under `tgcloud/`.
 - Initial production deployment completed successfully on 2026-11-04 via GitHub Actions run 41769613500 at merge commit `daabac4cb111faadfe2b6393bcea46fa65b4d242`.
-- PR #4 account-isolation/schema deployment completed successfully on `main` via TGCloud run 41803319896 at merge commit `d5e19316887a281ce3ebaab330fe44cf5cf346e6`. PR #5 merge triggered TGCloud deployment run 41864367277; it was queued at the last audit.
+- PR #4 account-isolation/schema deployment completed successfully on `main` via TGCloud run 41803319896 at merge commit `d5e19316887a281ce3ebaab330fe44cf5cf346e6`. PR #5 merge triggered TGCloud deployment run 41864367277, which completed successfully. The subsequent migration-workflow hardening change deployed successfully in run 41872648961.
 - TGCloud published 944 static files (51.2 MB) and registered the optional `tgcloud/schema.js` module. The CLI-reported Mini App URL is `https://app8984347139.tgcloud.ai/`.
 - QR scanner redeployment: PR #2 merged as `b929a9d6384c515c6592ae3ddf7ebe6de1ea5038`; CI run 41771593637 passed; `main` CI run 41771745732 passed; TGCloud deploy run 41771745665 passed and uploaded the changed `dist/` bundle (38 files, 18.0 MB) to the same static URL.
 - The production deploy workflow successfully consumed Environment secret `ACCESS_TOKEN` through the `TGCLOUD_TOKEN` mapping. Main-branch CI run 41769613483 also passed `npm ci`, host typecheck, and the root-path build.
