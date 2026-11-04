@@ -9,10 +9,19 @@ const list = (...items) => ({
   items: items.map((text) => ({ blocks: [paragraph(text)] })),
 });
 
+const steps = (...items) => ({
+  type: 'list',
+  items: items.map((text, index) => ({
+    value: index + 1,
+    type: '1',
+    blocks: [paragraph(text)],
+  })),
+});
+
 export const buildWelcomeRichMessage = ({ firstName, hasInstance }) => {
   const displayName = typeof firstName === 'string' && firstName.trim()
     ? firstName.trim().slice(0, 64)
-    : 'there';
+    : 'teman';
 
   const instanceStatus = hasInstance
     ? 'Akun Telegram ini sudah memiliki satu instance OpenChamber yang terdaftar.'
@@ -34,7 +43,7 @@ export const buildWelcomeRichMessage = ({ firstName, hasInstance }) => {
         type: 'divider',
       },
       heading('Mulai menggunakan', 2),
-      list(
+      steps(
         'Jalankan OpenChamber Server pada perangkat atau server milikmu.',
         'Buka Mini App dan pilih Scan QR code.',
         'Di OpenChamber, buka Settings → Remote Instances → Add a device, lalu pilih Anywhere jika ingin menggunakan Private Relay.',
@@ -64,6 +73,7 @@ export const buildWelcomeRichMessage = ({ firstName, hasInstance }) => {
           'Raw initData Telegram hanya digunakan platform untuk memverifikasi request endpoint. Aplikasi tidak menyimpan raw initData.',
           'Data instance digunakan untuk memuat koneksi milik akun yang sedang terautentikasi, bukan untuk membagikan server ke pengguna lain.',
         ),
+        paragraph('Mapping akun disimpan sampai pemilik menghapus instance atau menghapus data bot melalui mekanisme pengelolaan yang disediakan. Data teknis disimpan pada infrastruktur Telegram Serverless sesuai kebijakan platform.'),
         paragraph('Saat instance dihapus dari Mini App, mapping Telegram user ID di database dihapus. Credential perangkat yang sebelumnya diterbitkan OpenChamber Server tetap harus dicabut dari server tersebut.'),
         paragraph('Jangan masukkan informasi sensitif ke label instance. Alamat jaringan dan metadata relay dapat mengungkap informasi teknis tentang servermu.'),
       ]),
@@ -104,7 +114,7 @@ export const buildWelcomeRichMessage = ({ firstName, hasInstance }) => {
       },
       {
         type: 'footer',
-        text: 'OpenChamber Mini App · Telegram Serverless · Privacy by account ownership',
+        text: 'OpenChamber Mini App · Telegram Bot API 10.3 Rich Messages',
       },
     ],
   };
