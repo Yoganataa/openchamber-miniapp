@@ -20,6 +20,7 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Pass npm ci, host typecheck, and full Vite build (run 41729605708, commit d7a79b2), plus production /miniapp/ build (run 41729951658, commit 2de9679).
 - [x] Port upstream's manual chunk strategy; Mermaid and Markdown renderer are split from the eager bundle.
 - [x] Verify the root-path TGCloud static build (CI run 41769424938) and production deployment (run 41769613500; 944 files / 51.2 MB uploaded).
+- [x] Verify the QR scanner follow-up root build (main CI run 41771745732) and production redeployment (run 41771745665; 38 changed files / 18.0 MB uploaded).
 - [ ] Verify navigation, chat, sessions, workspace drawer, files, changes, settings, error states, and attachments against live OpenChamber Server.
 - [ ] Verify the app in Telegram Android, iOS, Desktop, Telegram Web, and fallback browser.
 
@@ -31,9 +32,9 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Expose the upstream pairing-v2 connection screen in the Telegram browser host without recreating its UI.
 - [x] Configure the Mini App host to discover the OpenChamber server through pairing instead of a build-time server URL.
 - [ ] Verify Anywhere pairing and Private Relay redemption from the deployed Telegram WebView.
-- [x] Route the upstream Scan QR action to Telegram's native `showScanQrPopup` API and validate scans with the upstream pairing-v2 parser; keep manual link entry as fallback.
+- [x] Route the upstream Scan QR action to Telegram's native `showScanQrPopup` API and validate scans with the upstream pairing-v2 parser; keep manual link entry as fallback (PR #2, CI run 41771593637).
 - [x] Audit the pinned upstream browser runtime, pairing-v2 and Private Relay transport contracts.
-- [ ] Verify the Telegram native QR popup opens, scans a real pairing QR, closes on cancel, and redeems pairing on Telegram Android/iOS/Desktop.
+- [ ] Verify the deployed Telegram native QR popup opens, scans a real pairing QR, closes on cancel, and redeems pairing on Telegram Android/iOS/Desktop (TGCloud deployment run 41771745665).
 - [ ] Confirm theme/viewport behavior after mount, including keyboard resize.
 - [x] Document BotFather Main Mini App, chat menu button, and direct-link setup in README and deployment guide.
 - [ ] Validate Telegram initData server-side if it is used for identity mapping or authorization.
