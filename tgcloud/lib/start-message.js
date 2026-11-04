@@ -40,6 +40,25 @@ export const buildWelcomeRichMessage = ({ firstName, hasInstance }) => {
         text: 'Satu akun Telegram hanya memiliki satu instance. Identitas pemilik diverifikasi oleh Telegram Serverless; membuka Mini App dari akun Telegram lain tidak memberikan akses ke instance akun ini.',
       },
       {
+        type: 'table',
+        is_bordered: true,
+        is_compact: true,
+        cells: [
+          [
+            { text: 'Komponen', is_header: true },
+            { text: 'Tanggung jawab', is_header: true },
+          ],
+          [
+            { text: 'SQLite' },
+            { text: 'Satu mapping instance untuk setiap Telegram user ID.' },
+          ],
+          [
+            { text: 'Client token' },
+            { text: 'Credential perangkat; tidak disimpan di SQLite.' },
+          ],
+        ],
+      },
+      {
         type: 'divider',
       },
       heading('Mulai menggunakan', 2),
