@@ -32,8 +32,9 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Bridge Telegram BackButton to upstream mobile back-stack handling.
 - [x] Expose the upstream pairing-v2 connection screen in the Telegram browser host without recreating its UI.
 - [x] Configure the Mini App host to discover the OpenChamber server through pairing instead of a build-time server URL.
-- [ ] Verify Anywhere pairing and Private Relay redemption from the deployed Telegram WebView.
+- [ ] Verify Anywhere pairing and Private Relay redemption from the deployed Telegram WebView after PR #5 post-merge TGCloud deployment run 41864367277 completes.
 - [x] Route the upstream Scan QR action to Telegram's native `showScanQrPopup` API and validate scans with the upstream pairing-v2 parser; keep manual link entry as fallback (PR #2, CI run 41771593637).
+- [x] Harden pairing-v2 scan compatibility for percent-encoded custom-scheme links and older Android WebViews; preserve safe Private Relay URL query parameters while rejecting credential-bearing parameters; classify Telegram account-sync failures separately from auth failures; provide branded startup/error/retry UI (PR #5 merged as `eee22852a24a6c246ca1262762162bd147c73f36`; PR CI run 41808417355 passed).
 - [x] Audit the pinned upstream browser runtime, pairing-v2 and Private Relay transport contracts.
 - [ ] Verify the deployed Telegram native QR popup opens, scans a real pairing QR, closes on cancel, and redeems pairing on Telegram Android/iOS/Desktop (TGCloud deployment run 41771745665).
 - [ ] Confirm theme/viewport behavior after mount, including keyboard resize.
@@ -44,7 +45,7 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Prevent cookie-backed OpenChamber session reuse in the Telegram host, including all `runtimeFetch` calls to direct and Private Relay runtimes.
 - [x] Add /start RichMessage Bot API 10.3 greeting with TOS, Privacy Policy, FAQ and Mini App entry.
 - [x] Add Serverless account-ownership and RichMessage contract tests.
-- [ ] Apply the production SQLite migration manually after schema deployment.
+- [ ] Apply the production SQLite migration manually after schema deployment (PR #4 schema is merged; confirm the migration workflow itself has succeeded before considering this complete).
 - [ ] Verify same-client account isolation, same-account multi-device behavior and Telegram SecureStorage on real Telegram clients.
 
 ## Phase 3 — Mobile workflow parity
@@ -66,7 +67,7 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Confirm Environment `production` and Environment secret `ACCESS_TOKEN`; verify main-branch eligibility and actual TGCloud deployment (run 41769613500).
 - [x] Add verified-initData endpoints and SQLite schema for account-owned instances.
 - [x] Add a manual GitHub Actions workflow for reviewed Serverless DB migrations; normal deploys still never migrate automatically.
-- [ ] Apply and verify the production migration on the user's actual bot.
+- [ ] Apply and verify the production migration on the user's actual bot (still manual; do not infer success from a TGCloud code deployment).
 - [ ] Verify Telegram Serverless SDK runtime and quotas on the user's actual bot.
 - [ ] Add threat model and data-retention policy.
 - [ ] Add initData-verified endpoints only if a real backend identity-mapping requirement exists.
