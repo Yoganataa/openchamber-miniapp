@@ -108,6 +108,18 @@ jobs:
 
           if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
             git fetch origin "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME"
+
+            remote_branch="refs/remotes/origin/$BRANCH_NAME"
+            branch_pin="$(git ls-tree "$remote_branch" "$SUBMODULE" | awk '{ print $3 }')"
+            if [[ ! "$branch_pin" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::Could not resolve the upstream submodule pin on $BRANCH_NAME."
+              exit 1
+            fi
+
+            if ! git -C "$SUBMODULE" cat-file -e "${branch_pin}^{commit}" 2>/dev/null; then
+              git -C "$SUBMODULE" fetch --no-tags origin "$branch_pin"
+            fi
+
             git switch --create "$BRANCH_NAME" --track "origin/$BRANCH_NAME"
 
             # Keep the long-lived automation branch based on the latest main
@@ -121,10 +133,6 @@ jobs:
           if [[ ! "$branch_pin" =~ ^[0-9a-f]{40}$ ]]; then
             echo "::error::Could not resolve the upstream submodule pin on $BRANCH_NAME."
             exit 1
-          fi
-
-          if ! git -C "$SUBMODULE" cat-file -e "${branch_pin}^{commit}" 2>/dev/null; then
-            git -C "$SUBMODULE" fetch --no-tags origin "$branch_pin"
           fi
 
           branch_commit="$branch_pin"
