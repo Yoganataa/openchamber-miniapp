@@ -73,10 +73,5 @@ export const normalizeInstanceInput = (input) => {
     || candidates.find((candidate) => candidate.kind === 'relay')?.relay.serverId
     || null;
 
-  const requestedId = boundedString(input.instanceId, 128);
-  const instanceId = requestedId && /^[a-zA-Z0-9_-]+$/.test(requestedId)
-    ? requestedId
-    : crypto.randomUUID();
-
-  return { instanceId, serverId, label, candidates };
+  return { serverId, label, candidates };
 };
