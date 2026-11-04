@@ -108,7 +108,7 @@ TGCloud code/schema deployment and database migrations are separate operations. 
 2. Run **workflow_dispatch** against `main`.
 3. Verify the migration job succeeds before relying on `/start` account status or opening the Mini App.
 
-The migration workflow is manual, restricted to `main`, and uses the `production` Environment's `ACCESS_TOKEN`. Do not run it before the schema module has been deployed. For a local authenticated CLI session, the equivalent command is `npx tgcloud fetch && npx tgcloud migrate`.
+The migration workflow is manual, restricted to `main`, and uses the `production` Environment's `ACCESS_TOKEN`. It runs `npx tgcloud fetch` followed by `npx tgcloud migrate --safe`: this applies only additive/safe schema changes and skips destructive warnings or manual changes. The `--yes` option is deliberately not used because it can approve destructive warnings. Do not run the workflow before the schema module has been deployed. For a local authenticated CLI session, inspect the migration plan first with `npx tgcloud fetch && npx tgcloud migrate --dry-run`, then apply only approved additive changes with `npx tgcloud migrate --safe`.
 
 Never share a pairing link: it contains a one-time redemption secret. Revoke individual device credentials from the OpenChamber host when a device is no longer trusted. Deleting the Telegram account's instance mapping does not automatically revoke credentials previously issued by that OpenChamber server.
 
