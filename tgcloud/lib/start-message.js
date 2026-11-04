@@ -18,14 +18,16 @@ const steps = (...items) => ({
   })),
 });
 
-export const buildWelcomeRichMessage = ({ firstName, hasInstance }) => {
+export const buildWelcomeRichMessage = ({ firstName, hasInstance, databaseReady = true }) => {
   const displayName = typeof firstName === 'string' && firstName.trim()
     ? firstName.trim().slice(0, 64)
     : 'teman';
 
-  const instanceStatus = hasInstance
-    ? 'Akun Telegram ini sudah memiliki satu instance OpenChamber yang terdaftar.'
-    : 'Belum ada instance yang terdaftar untuk akun Telegram ini. Hubungkan server milikmu dari Mini App.';
+  const instanceStatus = !databaseReady
+    ? 'Penyimpanan akun sedang disiapkan. Kirim /start kembali setelah proses aktivasi selesai.'
+    : hasInstance
+      ? 'Akun Telegram ini sudah memiliki satu instance OpenChamber yang terdaftar.'
+      : 'Belum ada instance yang terdaftar untuk akun Telegram ini. Hubungkan server milikmu dari Mini App.';
 
   return {
     blocks: [
@@ -120,11 +122,11 @@ export const buildWelcomeRichMessage = ({ firstName, hasInstance }) => {
         type: 'buttons',
         align: 'center',
         buttons: [
-          {
+          ...(databaseReady ? [{
             text: 'Buka OpenChamber',
             style: 'success',
             web_app: { url: APP_URL },
-          },
+          }] : []),
           {
             text: 'Source Code',
             url: SOURCE_URL,
