@@ -69,7 +69,7 @@ See [Deployment](docs/DEPLOYMENT.md) for the full workflow and setup.
 3. Give the device a name, choose **Anywhere**, and create a pairing QR/link.
 4. Open this Mini App in Telegram and paste the complete one-time `openchamber://connect?...` pairing link into the manual connection field. The official pairing flow redeems it and establishes the runtime connection. A fresh pairing link is required after expiry or reuse.
 
-The Telegram Mini App runs the browser build, not the native Capacitor app. The native OpenChamber QR-scanner plugin is not available in this WebView, so this version uses the copied pairing link instead of an in-app camera scanner. When pairing from outside your LAN, choose **Anywhere** so the pairing payload can use OpenChamber Private Relay. Relay traffic is end-to-end encrypted between your client and your own OpenChamber instance.
+The Telegram Mini App uses Telegram's native QR scanner popup through the official Mini App API; it does not need the native Capacitor plugin or direct camera permission inside the WebView. Tap **Scan QR code** and scan the pairing QR shown by your OpenChamber host. The manual connection field remains available as a fallback on Telegram clients without the scanner API. When pairing from outside your LAN, choose **Anywhere** so the pairing payload can use OpenChamber Private Relay. Relay traffic is end-to-end encrypted between your client and your own OpenChamber instance.
 
 The browser runtime stores its issued client token in the Telegram WebView's local storage. Treat the WebView as a trusted device and revoke its device pairing from OpenChamber when access is no longer needed. Pairing links are one-time secrets; do not share them.
 
