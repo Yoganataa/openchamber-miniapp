@@ -96,6 +96,18 @@ The local deploy script runs `npx tgcloud fetch` first, then `npx tgcloud push t
 
 ### GitHub Actions auto-deploy
 
+### GitHub Environment and secret
+
+The deployment job explicitly targets the GitHub Environment named `main`. Store the Telegram Serverless **CLI Access Token** as an **Environment secret** in that environment, not as an environment variable:
+
+- Environment name: `main`
+- Secret name: `TGCLOUD_TOKEN`
+- Secret value: the Telegram Serverless CLI Access Token from BotFather → your bot → Serverless → CLI Access.
+
+In GitHub, open **Settings → Environments → main → Environment secrets → Add secret**. The workflow references it as `secrets.TGCLOUD_TOKEN`; environment secrets are only made available to jobs that declare the matching `environment`. Do not paste the value into the repository, a workflow file, or chat.
+
+For a production-only target, set **Deployment branches and tags** to **Selected branches and tags**, then allow the branch `main`. The workflow itself also gates the deployment job to `refs/heads/main`, so manual dispatch from another branch will not deploy. If the environment has required reviewers or a wait timer, the job will wait for those protection rules before the secret becomes available.
+
 `.github/workflows/deploy-tgcloud.yml` runs only on `main` when backend source/configuration, the npm manifest/lockfile, or the deployment workflow changes. It also supports manual dispatch, but the job is restricted to `main`.
 
 Create a repository Actions secret with this exact name:
