@@ -53,13 +53,13 @@ const parseSecureTokenMap = (value: string | null): Record<string, string> => {
   try {
     const parsed: unknown = JSON.parse(value);
     if (!isRecord(parsed)) return {};
-    return Object.fromEntries(
-      Object.entries(parsed).filter(([key, token]) =>
-        /^[a-zA-Z0-9_-]{16,64}$/.test(key)
-        && typeof token === 'string'
-        && token.trim().length > 0,
-      ),
-    );
+    const tokens: Record<string, string> = {};
+    for (const [key, token] of Object.entries(parsed)) {
+      if (!/^[a-zA-Z0-9_-]{16,64}$/.test(key) || typeof token !== 'string') continue;
+      const normalized = token.trim();
+      if (normalized) tokens[key] = normalized;
+    }
+    return tokens;
   } catch {
     return {};
   }
