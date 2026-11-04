@@ -47,10 +47,10 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Add TGCloud project config, schema, and SDK reference.
 - [x] Remove the unused starter echo handler so the first automated deployment does not echo users' messages. No chat-message handler is active until a real flow is designed.
 - [x] Disable separate-origin TGCloud static frontend hosting; use same-origin hosting with OpenChamber Server.
-- [x] Add GitHub Actions auto-deploy on main for `tgcloud/` backend changes using `TGCLOUD_TOKEN`; fetch remote revision first and push only tracked backend files.
-- [x] Bind the deploy job to GitHub Environment `production`; read `TGCLOUD_TOKEN` as an environment-scoped secret.
+- [x] Add GitHub Actions auto-deploy on main for `tgcloud/` backend changes using `ACCESS_TOKEN`; fetch remote revision first and push only tracked backend files.
+- [x] Bind the deploy job to GitHub Environment `production`; read the environment-scoped `ACCESS_TOKEN` secret and map it to `TGCLOUD_TOKEN`.
 - [x] Keep database migrations out of the unattended deployment workflow.
-- [ ] Confirm Environment `production` exists, contains Environment secret `TGCLOUD_TOKEN`, and permits deployments only from branch `main`.
+- [ ] Confirm Environment `production` exists, contains Environment secret `ACCESS_TOKEN`, and permits deployments only from branch `main`.
 - [ ] Verify linked-bot eligibility, SDK runtime, quotas, and deployment flow on the user's actual bot.
 - [ ] Add threat model and data-retention policy.
 - [ ] Add initData-verified endpoints only if a real backend identity-mapping requirement exists.
