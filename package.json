@@ -14,7 +14,8 @@
     "validate:workflows": "node scripts/validate-github-workflows.mjs",
     "deploy": "npm run build && npx tgcloud fetch && npx tgcloud push",
     "postinstall": "node scripts/link-upstream-node-modules.mjs",
-    "build:miniapp:same-origin": "node scripts/build-same-origin.mjs"
+    "build:miniapp:same-origin": "node scripts/build-same-origin.mjs",
+    "test:serverless": "node scripts/test-serverless-contracts.mjs"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8.0.0",
