@@ -37,17 +37,32 @@ const candidateIdentityKeys = (candidates: unknown): Set<string> => {
 };
 
 const isSameInstance = (local: unknown, instance: InstanceRecord): local is Record<string, unknown> => {
-  if (!isRecord(local) || local.id !== instance.instanceId) return false;
+  if (!isRecord(local)) return false;
 
   const localServerId = typeof local.serverId === 'string' ? local.serverId : null;
   const remoteServerId = typeof instance.serverId === 'string' ? instance.serverId : null;
 
-  if (localServerId || remoteServerId) {
-    return Boolean(localServerId && remoteServerId && localServerId === remoteServerId);
-  }
+  // Server identity outranks transport addresses. If both sides know it, a
+  // mismatch is definitive even when a LAN address was later reassigned.
+  if (localServerId && remoteServerId) return localServerId === remoteServerId;
 
   const localKeys = candidateIdentityKeys(local.candidates);
   const remoteKeys = candidateIdentityKeys(instance.candidates);
+  const sharedRelayIdentity = [...localKeys].some(
+    (key) => key.startsWith('relay:') && remoteKeys.has(key),
+  );
+  if (sharedRelayIdentity) return true;
+
+  // The canonical ID is persisted after the Serverless write. Keeping this
+  // fallback also covers instances whose older host revision has no server ID.
+  if (local.id === instance.instanceId) return true;
+
+  // Do not fall back to a direct URL when only one side knows the server ID:
+  // the address could have been reassigned to another OpenChamber host.
+  if (localServerId || remoteServerId) return false;
+
+  // Recovery for a browser interrupted after the server commit but before the
+  // canonical ID was copied into its local metadata.
   return [...localKeys].some((key) => remoteKeys.has(key));
 };
 
