@@ -28,6 +28,7 @@ const sameJson = (left: unknown, right: unknown): boolean => {
 
 const persistInstanceSnapshot = async (
   telegram: TelegramWebApp,
+  storage: AccountScopedStorage,
   records: unknown[],
 ): Promise<void> => {
   const candidate = records[0];
@@ -36,21 +37,27 @@ const persistInstanceSnapshot = async (
     return;
   }
 
-  const instanceId = typeof candidate.id === 'string' && candidate.id.trim()
-    ? candidate.id.trim()
-    : crypto.randomUUID();
   const label = typeof candidate.label === 'string' && candidate.label.trim()
     ? candidate.label.trim()
     : 'OpenChamber Server';
 
-  const result = await callTelegramServerless<{ saved: boolean }>(telegram, 'saveMyInstance', {
-    instanceId,
+  const result = await callTelegramServerless<{ saved: boolean; instanceId: string }>(telegram, 'saveMyInstance', {
     serverId: typeof candidate.serverId === 'string' ? candidate.serverId : undefined,
     label,
     candidates: candidate.candidates,
   });
 
-  if (!result?.saved) throw new Error('The Telegram account instance mapping could not be saved.');
+  if (!result?.saved || typeof result.instanceId !== 'string' || !result.instanceId) {
+    throw new Error('The Telegram account instance mapping could not be saved.');
+  }
+
+  // Keep the server-issued canonical ID in each device's local record without
+  // emitting another sync operation. This makes a second device converge on the
+  // same one-instance mapping instead of replacing its primary identity.
+  const local = storage.readConnections()[0];
+  if (isRecord(local) && local.id !== result.instanceId) {
+    storage.replaceLocalConnections([{ ...local, id: result.instanceId }]);
+  }
 };
 
 const reconcileLocalInstance = (
@@ -106,7 +113,7 @@ const initializeStorageSync = (
     syncQueue = syncQueue
       .catch(() => undefined)
       .then(async () => {
-        await persistInstanceSnapshot(telegram, records);
+        await persistInstanceSnapshot(telegram, storage, records);
         persistedRevision = Math.max(persistedRevision, scheduledRevision);
         lastError = undefined;
       })
