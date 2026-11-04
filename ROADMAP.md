@@ -41,7 +41,7 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Validate Telegram initData server-side and derive the sole instance owner from verified ctx.initData.user.id.
 - [x] Add one-row-per-account SQLite ownership with stable server-issued instance identity.
 - [x] Isolate upstream local/session storage by Telegram account; keep per-device credentials out of SQLite and use Telegram SecureStorage when available.
-- [x] Prevent cookie-backed OpenChamber session reuse in the Telegram host.
+- [x] Prevent cookie-backed OpenChamber session reuse in the Telegram host, including all `runtimeFetch` calls to direct and Private Relay runtimes.
 - [x] Add /start RichMessage Bot API 10.3 greeting with TOS, Privacy Policy, FAQ and Mini App entry.
 - [x] Add Serverless account-ownership and RichMessage contract tests.
 - [ ] Apply the production SQLite migration manually after schema deployment.
