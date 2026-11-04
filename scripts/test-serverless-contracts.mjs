@@ -69,6 +69,11 @@ assert.equal(normalizeInstanceInput({
 }), null);
 
 const welcome = buildWelcomeRichMessage({ firstName: 'Nata', hasInstance: false });
+const migrationWelcome = buildWelcomeRichMessage({
+  firstName: 'Nata',
+  hasInstance: false,
+  databaseReady: false,
+});
 assert.ok(Array.isArray(welcome.blocks));
 assert.ok(welcome.blocks.some((block) => block.type === 'heading'));
 assert.ok(welcome.blocks.some((block) => block.type === 'expandable_blockquote'));
@@ -87,6 +92,13 @@ assert.ok(summaries.includes('Kebijakan Privasi (Privacy Policy)'));
 assert.ok(summaries.includes('FAQ — Pertanyaan yang Sering Diajukan'));
 assert.ok(richBlocks.some((block) => block.type === 'buttons'));
 assert.ok(richBlocks.some((block) => block.type === 'footer'));
+
+const migrationBlocks = flattenBlocks(migrationWelcome.blocks);
+assert.ok(migrationBlocks.some((block) => block.type === 'paragraph'
+  && typeof block.text === 'string'
+  && block.text.includes('Penyimpanan akun sedang disiapkan.')));
+assert.equal(migrationBlocks.find((block) => block.type === 'buttons').buttons
+  .some((button) => button.web_app), false);
 
 const buttons = richBlocks.find((block) => block.type === 'buttons').buttons;
 assert.ok(buttons.some((button) => button.web_app?.url === 'https://app8984347139.tgcloud.ai/'));
