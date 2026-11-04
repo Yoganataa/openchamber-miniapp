@@ -18,7 +18,7 @@ const normalizeLabel = (value) => {
   return label ? label.slice(0, MAX_LABEL_LENGTH) : null;
 };
 
-const parseUrl = (value, protocols, { allowQuery = false } = {}) => {
+const parseUrl = (value, protocols, { allowQuery = false, preserveTrailingSlash = false } = {}) => {
   if (!boundedString(value, MAX_URL_LENGTH)) return null;
 
   try {
@@ -36,7 +36,8 @@ const parseUrl = (value, protocols, { allowQuery = false } = {}) => {
       }
     }
     parsed.hash = '';
-    return parsed.toString().replace(/\/$/, '');
+    const normalized = parsed.toString();
+    return preserveTrailingSlash ? normalized : normalized.replace(/\/+$/g, '');
   } catch {
     return null;
   }
@@ -51,7 +52,10 @@ const normalizeDirectCandidate = (candidate) => {
 const normalizeRelayCandidate = (candidate) => {
   if (!isRecord(candidate) || candidate.kind !== 'relay' || !isRecord(candidate.relay)) return null;
 
-  const relayUrl = parseUrl(candidate.relay.relayUrl, ['ws:', 'wss:'], { allowQuery: true });
+  const relayUrl = parseUrl(candidate.relay.relayUrl, ['ws:', 'wss:'], {
+    allowQuery: true,
+    preserveTrailingSlash: true,
+  });
   const serverId = boundedString(candidate.relay.serverId, 128);
   const jwk = candidate.relay.hostEncPubJwk;
 
