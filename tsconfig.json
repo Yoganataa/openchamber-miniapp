@@ -21,6 +21,7 @@
     "src/main.tsx",
     "src/lib/config.ts",
     "src/lib/telegram/client.ts",
+    "src/lib/telegram/qr-scan.ts",
     "src/lib/telegram/types.ts",
     "src/lib/openchamber/globals.d.ts",
     "src/lib/openchamber/upstream.d.ts",

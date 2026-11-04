@@ -31,9 +31,9 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Expose the upstream pairing-v2 connection screen in the Telegram browser host without recreating its UI.
 - [x] Configure the Mini App host to discover the OpenChamber server through pairing instead of a build-time server URL.
 - [ ] Verify Anywhere pairing and Private Relay redemption from the deployed Telegram WebView.
-- [ ] Add browser camera QR scanning; the current upstream scanner requires the native Capacitor plugin, so this build uses a pasted pairing link.
+- [x] Route the upstream Scan QR action to Telegram's native `showScanQrPopup` API and validate scans with the upstream pairing-v2 parser; keep manual link entry as fallback.
 - [x] Audit the pinned upstream browser runtime, pairing-v2 and Private Relay transport contracts.
-- [ ] Verify upstream OpenChamber pairing/login in Telegram WebView.
+- [ ] Verify the Telegram native QR popup opens, scans a real pairing QR, closes on cancel, and redeems pairing on Telegram Android/iOS/Desktop.
 - [ ] Confirm theme/viewport behavior after mount, including keyboard resize.
 - [x] Document BotFather Main Mini App, chat menu button, and direct-link setup in README and deployment guide.
 - [ ] Validate Telegram initData server-side if it is used for identity mapping or authorization.
