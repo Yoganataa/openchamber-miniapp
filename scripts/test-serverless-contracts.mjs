@@ -224,6 +224,8 @@ const telegramBridge = await readFile(new URL('../src/vite/telegram-back-button-
 assert.match(telegramBridge, /RUNTIME_FETCH_SUFFIX/);
 assert.match(telegramBridge, /RUNTIME_FETCH_RELAY_MARKER/);
 assert.match(telegramBridge, /credentials: 'omit' as const/);
+assert.match(telegramBridge, /COOKIE_ONLY_LOGIN_MARKER/);
+assert.match(telegramBridge, /window\.__OPENCHAMBER_MINIAPP_HOST__ !== true/);
 assert.match(hostEntry, /sharedRelayIdentity/);
 assert.match(hostEntry, /local\.id === instance\.instanceId/);
 assert.doesNotMatch(hostEntry, /if \(!isRecord\(local\) \|\| local\.id !== instance\.instanceId\)/);
