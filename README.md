@@ -69,7 +69,7 @@ Both launch surfaces must point to the same-origin URL, for example `https://ope
 
 The `tgcloud/` directory is for optional trusted backend modules. `npm run deploy` first fetches the current cloud revision, then pushes only tracked `tgcloud/` modules. It does not upload the frontend to TGCloud's separate static hostname.
 
-GitHub Actions automatically deploys backend-module changes after they reach `main`. Add a repository Actions secret named `TGCLOUD_TOKEN` containing the CLI Access Token from BotFather → your bot → Serverless → CLI Access. This is **not** the Telegram Bot API token. The workflow validates the Mini App build, fetches the remote deployment state, and then pushes `tgcloud/`. It never runs database migrations automatically.
+GitHub Actions automatically deploys backend-module changes after they reach `main`. Create the GitHub Environment `main` and add an **Environment secret** named `TGCLOUD_TOKEN` containing the CLI Access Token from BotFather → your bot → Serverless → CLI Access. This is **not** the Telegram Bot API token. The deploy job declares `environment: main`, validates the Mini App build, fetches the remote deployment state, and then pushes `tgcloud/`. It never runs database migrations automatically. Restrict the environment's deployment branches to `main`. See [Deployment](docs/DEPLOYMENT.md#github-environment-and-secret) for setup steps.
 
 ```bash
 npm create @tgcloud/bot .
