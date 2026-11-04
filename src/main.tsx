@@ -18,12 +18,37 @@ type InstanceBootstrap = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
-const sameJson = (left: unknown, right: unknown): boolean => {
-  try {
-    return JSON.stringify(left) === JSON.stringify(right);
-  } catch {
-    return false;
+const candidateIdentityKeys = (candidates: unknown): Set<string> => {
+  if (!Array.isArray(candidates)) return new Set();
+  const keys = new Set<string>();
+
+  for (const candidate of candidates) {
+    if (!isRecord(candidate)) continue;
+    if (candidate.kind === 'direct' && typeof candidate.url === 'string') {
+      keys.add(`direct:${candidate.url.replace(/\\/$/, '')}`);
+    }
+    if (candidate.kind === 'relay' && isRecord(candidate.relay)
+      && typeof candidate.relay.serverId === 'string') {
+      keys.add(`relay:${candidate.relay.serverId}`);
+    }
   }
+
+  return keys;
+};
+
+const isSameInstance = (local: unknown, instance: InstanceRecord): local is Record<string, unknown> => {
+  if (!isRecord(local) || local.id !== instance.instanceId) return false;
+
+  const localServerId = typeof local.serverId === 'string' ? local.serverId : null;
+  const remoteServerId = typeof instance.serverId === 'string' ? instance.serverId : null;
+
+  if (localServerId || remoteServerId) {
+    return Boolean(localServerId && remoteServerId && localServerId === remoteServerId);
+  }
+
+  const localKeys = candidateIdentityKeys(local.candidates);
+  const remoteKeys = candidateIdentityKeys(instance.candidates);
+  return [...localKeys].some((key) => remoteKeys.has(key));
 };
 
 const persistInstanceSnapshot = async (
@@ -72,20 +97,19 @@ const reconcileLocalInstance = (
   }
 
   const local = storage.readConnections()[0];
-  const sameInstance = isRecord(local)
-    && local.id === instance.instanceId
-    && sameJson(local.candidates, instance.candidates)
-    && (!local.serverId || !instance.serverId || local.serverId === instance.serverId);
-
+  const sameInstance = isSameInstance(local, instance);
   const clientToken = sameInstance && typeof local.clientToken === 'string'
     ? local.clientToken
     : undefined;
 
   storage.seedConnections([{
     id: instance.instanceId,
-    label: instance.label,
-    serverId: instance.serverId ?? undefined,
-    candidates: instance.candidates,
+    label: sameInstance && typeof local.label === 'string' ? local.label : instance.label,
+    serverId: instance.serverId ?? (sameInstance && typeof local.serverId === 'string' ? local.serverId : undefined),
+    // Candidate addresses are device-local (LAN routes differ by network).
+    // Keep a matching device's candidates while the canonical server identity
+    // remains the same; a new device seeds from the server-side metadata.
+    candidates: sameInstance && Array.isArray(local.candidates) ? local.candidates : instance.candidates,
     lastUsedAt: sameInstance && typeof local.lastUsedAt === 'number' ? local.lastUsedAt : Date.now(),
     ...(clientToken ? { clientToken } : {}),
   }]);
