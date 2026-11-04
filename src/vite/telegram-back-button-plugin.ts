@@ -14,6 +14,19 @@ const MINIAPP_PAIRING_HINT_MARKER =
 const MOBILE_APP_SUFFIX = '/packages/ui/src/apps/MobileApp.tsx';
 const MOBILE_ENTRY_SUFFIX = '/packages/ui/src/apps/renderMobileApp.tsx';
 const MOBILE_CONNECTION_SUFFIX = '/packages/ui/src/apps/MobileConnectionWelcome.tsx';
+const MOBILE_CONNECTIONS_SUFFIX = '/packages/ui/src/apps/mobileConnections.ts';
+
+const ACCOUNT_SAVE_MARKERS = [
+  "      await persistMetadata({ id: saved?.id, label, candidates, clientToken: token, requestHeaders: headerUpdate });",
+  "      await persistMetadata({ label, candidates: deviceCandidates, serverId, clientToken: issuedToken });",
+  "          await persistMetadata({ id, label, candidates });",
+  "      await persistMetadata({ id, label, candidates, clientToken: issuedToken });",
+  "      const next = await persistMobileConnection({ id: input.id, label, candidates, clientToken, requestHeaders });",
+  "      const next = await deleteMobileConnection(id);",
+];
+
+const ACCOUNT_COOKIE_MARKER = "credentials: token ? 'omit' : 'include'";
+const PASSWORD_COOKIE_MARKER = "credentials: 'include' as const";
 
 const count = (source: string, marker: string): number => source.split(marker).length - 1;
 
@@ -94,6 +107,43 @@ export function telegramBackButtonPlugin(): Plugin {
           ),
           map:null,
         };
+      }
+
+      if (sourceId.endsWith(MOBILE_CONNECTIONS_SUFFIX)) {
+        for (const marker of ACCOUNT_SAVE_MARKERS) {
+          const occurrences = count(code, marker);
+          if (occurrences !== 1) {
+            this.error(`Expected one upstream account-isolation marker, found ${occurrences}: ${marker}`);
+          }
+        }
+
+        const cookieOccurrences = count(code, ACCOUNT_COOKIE_MARKER);
+        const passwordCookieOccurrences = count(code, PASSWORD_COOKIE_MARKER);
+        if (cookieOccurrences !== 2 || passwordCookieOccurrences !== 1) {
+          this.error(
+            `Expected two tokenless-session cookie guards and one password-login cookie guard, found session=${cookieOccurrences}, password=${passwordCookieOccurrences}.`,
+          );
+        }
+
+        let transformed = code;
+        for (const marker of ACCOUNT_SAVE_MARKERS) {
+          const indentation = marker.match(/^\\s*/)?.[0] ?? '';
+          transformed = transformed.replace(
+            marker,
+            `${marker}\\n${indentation}await window.__OPENCHAMBER_SYNC_INSTANCE__?.();`,
+          );
+        }
+
+        transformed = transformed.replaceAll(
+          ACCOUNT_COOKIE_MARKER,
+          "credentials: token || window.__OPENCHAMBER_MINIAPP_HOST__ === true ? 'omit' : 'include'",
+        );
+        transformed = transformed.replace(
+          PASSWORD_COOKIE_MARKER,
+          "credentials: window.__OPENCHAMBER_MINIAPP_HOST__ === true ? 'omit' as const : 'include' as const",
+        );
+
+        return { code: transformed, map: null };
       }
 
       if (sourceId.endsWith(MOBILE_CONNECTION_SUFFIX)) {
