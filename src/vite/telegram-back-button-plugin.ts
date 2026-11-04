@@ -32,6 +32,7 @@ const ACCOUNT_SAVE_MARKERS = [
 
 const ACCOUNT_COOKIE_MARKER = "credentials: token ? 'omit' : 'include'";
 const PASSWORD_COOKIE_MARKER = "credentials: 'include' as const";
+const COOKIE_ONLY_LOGIN_MARKER = "if (chosen.kind === 'direct' && !isCapacitorApp()) {";
 
 const count = (source: string, marker: string): number => source.split(marker).length - 1;
 
@@ -124,9 +125,10 @@ export function telegramBackButtonPlugin(): Plugin {
 
         const cookieOccurrences = count(code, ACCOUNT_COOKIE_MARKER);
         const passwordCookieOccurrences = count(code, PASSWORD_COOKIE_MARKER);
-        if (cookieOccurrences !== 2 || passwordCookieOccurrences !== 1) {
+        const cookieOnlyLoginOccurrences = count(code, COOKIE_ONLY_LOGIN_MARKER);
+        if (cookieOccurrences !== 2 || passwordCookieOccurrences !== 1 || cookieOnlyLoginOccurrences !== 1) {
           this.error(
-            `Expected two tokenless-session cookie guards and one password-login cookie guard, found session=${cookieOccurrences}, password=${passwordCookieOccurrences}.`,
+            `Expected two tokenless-session cookie guards, one password-login cookie guard, and one cookie-only login fallback, found session=${cookieOccurrences}, password=${passwordCookieOccurrences}, fallback=${cookieOnlyLoginOccurrences}.`,
           );
         }
 
@@ -146,6 +148,10 @@ export function telegramBackButtonPlugin(): Plugin {
         transformed = transformed.replace(
           PASSWORD_COOKIE_MARKER,
           "credentials: window.__OPENCHAMBER_MINIAPP_HOST__ === true ? 'omit' as const : 'include' as const",
+        );
+        transformed = transformed.replace(
+          COOKIE_ONLY_LOGIN_MARKER,
+          "if (chosen.kind === 'direct' && !isCapacitorApp() && window.__OPENCHAMBER_MINIAPP_HOST__ !== true) {",
         );
 
         return { code: transformed, map: null };
