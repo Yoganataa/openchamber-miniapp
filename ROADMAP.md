@@ -19,7 +19,7 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Keep Telegram-specific boot and BackButton glue in this repository.
 - [x] Pass npm ci, host typecheck, and full Vite build (run 41729605708, commit d7a79b2), plus production /miniapp/ build (run 41729951658, commit 2de9679).
 - [x] Port upstream's manual chunk strategy; Mermaid and Markdown renderer are split from the eager bundle.
-- [x] Verify the production build script under /miniapp/ (CI run 41729951658 on commit 2de9679).
+- [ ] Verify the root-path TGCloud static build and deployment workflow on the current PR head.
 - [ ] Verify navigation, chat, sessions, workspace drawer, files, changes, settings, error states, and attachments against live OpenChamber Server.
 - [ ] Verify the app in Telegram Android, iOS, Desktop, Telegram Web, and fallback browser.
 
@@ -28,7 +28,11 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 - [x] Read Telegram viewport and color scheme and subscribe to viewport/theme events.
 - [x] Apply safe-area support.
 - [x] Bridge Telegram BackButton to upstream mobile back-stack handling.
-- [x] Audit upstream origin/CORS and browser API boot contract at pinned revision.
+- [x] Expose the upstream pairing-v2 connection screen in the Telegram browser host without recreating its UI.
+- [x] Configure the Mini App host to discover the OpenChamber server through pairing instead of a build-time server URL.
+- [ ] Verify Anywhere pairing and Private Relay redemption from the deployed Telegram WebView.
+- [ ] Add browser camera QR scanning; the current upstream scanner requires the native Capacitor plugin, so this build uses a pasted pairing link.
+- [x] Audit the pinned upstream browser runtime, pairing-v2 and Private Relay transport contracts.
 - [ ] Verify upstream OpenChamber pairing/login in Telegram WebView.
 - [ ] Confirm theme/viewport behavior after mount, including keyboard resize.
 - [x] Document BotFather Main Mini App, chat menu button, and direct-link setup in README and deployment guide.
@@ -46,27 +50,27 @@ The pinned OpenChamber mobile renderer is the UI source of truth. Do not indepen
 ## Phase 4 — Telegram Serverless (optional backend)
 - [x] Add TGCloud project config, schema, and SDK reference.
 - [x] Remove the unused starter echo handler so the first automated deployment does not echo users' messages. No chat-message handler is active until a real flow is designed.
-- [x] Disable separate-origin TGCloud static frontend hosting; use same-origin hosting with OpenChamber Server.
-- [x] Add GitHub Actions auto-deploy on main for `tgcloud/` backend changes using `ACCESS_TOKEN`; fetch remote revision first and push only tracked backend files.
+- [x] Enable Telegram Serverless static hosting for the Vite dist/ output; select the OpenChamber runtime through official pairing and Private Relay.
+- [x] Add GitHub Actions auto-deploy on main for the static Mini App and scoped `tgcloud/` modules using Environment secret `ACCESS_TOKEN`; fetch remote revision before targeted pushes.
 - [x] Bind the deploy job to GitHub Environment `production`; read the environment-scoped `ACCESS_TOKEN` secret and map it to `TGCLOUD_TOKEN`.
 - [x] Keep database migrations out of the unattended deployment workflow.
 - [ ] Confirm Environment `production` exists, contains Environment secret `ACCESS_TOKEN`, and permits deployments only from branch `main`.
 - [ ] Verify linked-bot eligibility, SDK runtime, quotas, and deployment flow on the user's actual bot.
 - [ ] Add threat model and data-retention policy.
 - [ ] Add initData-verified endpoints only if a real backend identity-mapping requirement exists.
-- [ ] Add a narrow authenticated relay only if upstream server features require one and no same-origin route exists.
+- [x] Reuse the official OpenChamber Private Relay; do not implement a second relay or custom API proxy in this project.
 
 ## Phase 5 — Release
 - [ ] Verify full user flows end to end on supported Telegram clients.
 - [ ] Review accessibility, performance, bundle size, and npm audit findings.
 - [ ] Add error reporting with sensitive-data scrubbing.
-- [ ] Complete same-origin deployment, rollback, operations, and security review.
+- [ ] Complete TGCloud static deployment, rollback, operations, pairing and security review.
 
 ## Non-goals
 - Reimplementing OpenChamber mobile UI or backend.
 - Running OpenCode or arbitrary Node.js processes inside Telegram Serverless.
 - Direct filesystem/shell access from Telegram WebView.
-- Deploying the frontend to TGCloud's separate static origin unless the upstream server CORS policy is intentionally changed and reviewed.
+- Reimplementing OpenChamber's pairing-v2 protocol or Private Relay.
 
 ## Project toolchain
 - Node.js >=24.14.0
