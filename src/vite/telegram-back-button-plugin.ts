@@ -127,10 +127,10 @@ export function telegramBackButtonPlugin(): Plugin {
 
         let transformed = code;
         for (const marker of ACCOUNT_SAVE_MARKERS) {
-          const indentation = marker.match(/^\\s*/)?.[0] ?? '';
+          const indentation = marker.match(/^\s*/)?.[0] ?? '';
           transformed = transformed.replace(
             marker,
-            `${marker}\\n${indentation}await window.__OPENCHAMBER_SYNC_INSTANCE__?.();`,
+            `${marker}\n${indentation}await window.__OPENCHAMBER_SYNC_INSTANCE__?.();`,
           );
         }
 
