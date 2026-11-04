@@ -46,13 +46,17 @@ TGCloud static hosting publishes the Vite `dist/` directory at the URL printed b
 https://app<app_id>.tgcloud.ai/
 ```
 
-The project has the static directory configured in `tgcloud.jsonc`. Deploy both static files and any scoped backend modules with:
+The project configures the static build directory in `tgcloud.jsonc`. Deploy the frontend and scoped Serverless modules in one atomic TGCloud push:
 
 ```bash
 npm run deploy
 ```
 
-That script builds the Mini App, fetches the latest TGCloud revision, then pushes `dist/` and `tgcloud/` separately. GitHub Actions performs the same steps after relevant changes reach `main`.
+The script builds the Mini App, fetches the latest deployed revision, then runs `npx tgcloud push`. Because `static.source` points to `dist`, that single push publishes the Mini App and changed `tgcloud/*.js` modules together. It does not apply database migrations.
+
+### Automatic upstream updates
+
+GitHub Actions checks the official OpenChamber `main` branch daily. When it advances, the workflow validates the candidate with `npm ci`, `npm run typecheck`, and `npm run build`, then creates or updates a pull request containing only the submodule pointer change. It never auto-merges. Merging the reviewed PR into `main` triggers the production deployment workflow.
 
 ### GitHub Environment secret
 
