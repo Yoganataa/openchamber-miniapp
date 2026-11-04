@@ -3,7 +3,7 @@
 Last audited: 2026-11-04
 Repository: https://github.com/Yoganataa/openchamber-miniapp
 Default branch: main
-Working branch: main
+Working branch: feat/upstream-auto-sync
 PR #1 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/1
 
 ## Current state
@@ -68,7 +68,7 @@ Phase 2 — Telegram pairing and remote runtime verification. Official UI adopti
 - Browser-mode client token persistence uses WebView local storage; revocation is performed at the OpenChamber host.
 - The upstream monorepo uses Bun, but this project must remain Node.js + npm only. Do not add a Bun lockfile or second package manager.
 - `npm run typecheck` checks local host glue; `npm run build` bundles the full pinned upstream renderer.
-`npm run deploy` builds the frontend, fetches TGCloud state, then uses one `npx tgcloud push` to publish static assets and changed `tgcloud/` modules in one batch. Never use `--force`; database migrations remain manual.
+- `npm run deploy` builds the frontend, fetches TGCloud state, then uses one `npx tgcloud push` to publish static assets and changed `tgcloud/` modules in one batch. Never use `--force`; database migrations remain manual.
 - GitHub Actions deployment only runs on `main` and consumes GitHub Environment `production` secret `ACCESS_TOKEN`, mapped to `TGCLOUD_TOKEN`.
 - `.tgcloud/` remains ignored local CLI state. Never inspect, expose or commit its credentials.
 
