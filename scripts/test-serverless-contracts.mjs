@@ -53,6 +53,18 @@ assert.equal(
   relayWithRoutingQuery?.candidates[0]?.relay.relayUrl,
   'wss://relay.example/ws?transport=websocket',
 );
+
+const relayWithTrailingPath = normalizeInstanceInput({
+  label: 'Relay trailing path',
+  candidates: [{
+    kind: 'relay',
+    relay: {
+      ...relayCandidate.relay,
+      relayUrl: 'wss://relay.example/ws/',
+    },
+  }],
+});
+assert.equal(relayWithTrailingPath?.candidates[0]?.relay.relayUrl, 'wss://relay.example/ws/');
 assert.equal(normalizeInstanceInput({
   label: 'Relay credential query',
   candidates: [{
