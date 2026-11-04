@@ -93,6 +93,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          branch_pin="$(git -C "$SUBMODULE" rev-parse HEAD)"
+
           if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
             git fetch origin "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME"
 
@@ -112,7 +114,7 @@ jobs:
             git switch --create "$BRANCH_NAME"
           fi
 
-          branch_commit="$(git -C "$SUBMODULE" rev-parse HEAD)"
+          branch_commit="$branch_pin"
           if [[ "$branch_commit" == "$UPSTREAM_COMMIT" ]]; then
             echo "proposal_required=false" >> "$GITHUB_OUTPUT"
             echo "The automation branch already contains the current upstream main. No new PR update is needed."
@@ -199,7 +201,7 @@ jobs:
 
           ## Deployment and safety
 
-          - Review the upstream changes and the CI result before merging this PR to \`main\`.
+          - Review the upstream diff and the linked validation run before merging this PR to \`main\`.
           - Merging to \`main\` invokes the existing TGCloud production deployment workflow.
           - The deployment uses one \`npx tgcloud push\` after \`npx tgcloud fetch\`.
           - No \`--force\`, database migration, or automatic merge is performed.
