@@ -35,6 +35,9 @@ jobs:
       - name: Validate GitHub Actions workflows
         run: npm run validate:workflows
 
+      - name: Test Telegram Serverless contracts and RichMessage 10.3
+        run: npm run test:serverless
+
       - name: Typecheck Telegram host adapter
         run: npm run typecheck
 
