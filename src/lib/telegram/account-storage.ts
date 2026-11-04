@@ -253,11 +253,14 @@ export const installTelegramAccountStorage = async (
       baseLocalStorage.setItem(prefix + MOBILE_CONNECTIONS_STORAGE_KEY, JSON.stringify(entries));
     }
 
-    if (syncEnabled && connectionSync) connectionSync(parseJsonArray(
-      secureStorageEnabled && first
-        ? JSON.stringify(({ clientToken: _clientToken, ...metadata }) => [metadata])(first)
-        : JSON.stringify(entries),
-    ));
+    if (syncEnabled && connectionSync) {
+      const metadata = entries.map((entry) => {
+        const { clientToken: _clientToken, ...safeEntry } = entry;
+        void _clientToken;
+        return safeEntry;
+      });
+      connectionSync(metadata);
+    }
   };
 
   const readConnectionValue = (raw: string | null): string | null => {
