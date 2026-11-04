@@ -298,7 +298,13 @@ export const installTelegramAccountStorage = async (
       syncEnabled = true;
     },
     seedConnections(connections) {
-      replaceLocalConnections(connections);
+      const wasEnabled = syncEnabled;
+      syncEnabled = false;
+      try {
+        writeConnectionValue(JSON.stringify(connections.slice(0, 1)));
+      } finally {
+        syncEnabled = wasEnabled;
+      }
     },
     replaceLocalConnections(connections) {
       const wasEnabled = syncEnabled;
