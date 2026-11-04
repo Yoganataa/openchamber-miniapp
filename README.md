@@ -40,19 +40,23 @@ No OpenChamber server URL or credential is compiled into the frontend. The targe
 
 ## Production hosting on Telegram
 
-TGCloud static hosting publishes the Vite `dist/` directory at the URL printed by `npx tgcloud push dist/`, normally in this form:
+TGCloud static hosting publishes the Vite `dist/` directory at the URL printed by `npx tgcloud push`, normally in this form:
 
 ```
 https://app<app_id>.tgcloud.ai/
 ```
 
-The project has the static directory configured in `tgcloud.jsonc`. Deploy both static files and any scoped backend modules with:
+The project configures the static build directory in `tgcloud.jsonc`. Deploy the frontend and scoped Serverless modules in one atomic TGCloud push:
 
 ```bash
 npm run deploy
 ```
 
-That script builds the Mini App, fetches the latest TGCloud revision, then pushes `dist/` and `tgcloud/` separately. GitHub Actions performs the same steps after relevant changes reach `main`.
+The script builds the Mini App, fetches the latest deployed revision, then runs `npx tgcloud push`. Because `static.source` points to `dist`, that single push publishes the Mini App and changed `tgcloud/*.js` modules together. It does not apply database migrations.
+
+### Automatic upstream updates
+
+GitHub Actions checks the official OpenChamber `main` branch daily. When it advances, the workflow validates the candidate with `npm ci`, `npm run typecheck`, and `npm run build`, then creates or updates a pull request containing only the submodule pointer change. It never auto-merges. Merging the reviewed PR into `main` triggers the production deployment workflow.
 
 ### GitHub Environment secret
 
@@ -67,7 +71,7 @@ See [Deployment](docs/DEPLOYMENT.md) for the full workflow and setup.
 1. Start OpenChamber Server on the computer you control.
 2. In that instance, open **Settings → Remote Instances → Connect to this server → Add a device**.
 3. Give the device a name, choose **Anywhere**, and create a pairing QR/link.
-4. Open this Mini App in Telegram and paste the complete one-time `openchamber://connect?...` pairing link into the manual connection field. The official pairing flow redeems it and establishes the runtime connection. A fresh pairing link is required after expiry or reuse.
+4. Open this Mini App in Telegram and tap **Scan QR code** to scan the pairing QR from the OpenChamber host. When the Telegram client does not expose the scanner API, paste the complete one-time `openchamber://connect?...` connection link into the manual field. The official pairing flow redeems it and establishes the runtime connection. A fresh pairing link is required after expiry or reuse.
 
 The Telegram Mini App uses Telegram's native QR scanner popup through the official Mini App API; it does not need the native Capacitor plugin or direct camera permission inside the WebView. Tap **Scan QR code** and scan the pairing QR shown by your OpenChamber host. The manual connection field remains available as a fallback on Telegram clients without the scanner API. When pairing from outside your LAN, choose **Anywhere** so the pairing payload can use OpenChamber Private Relay. Relay traffic is end-to-end encrypted between your client and your own OpenChamber instance.
 

@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate GitHub Actions workflows
+        run: npm run validate:workflows
+
       - name: Typecheck Telegram host adapter
         run: npm run typecheck
 

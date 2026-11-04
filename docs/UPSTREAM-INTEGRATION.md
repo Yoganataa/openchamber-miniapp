@@ -34,7 +34,7 @@ Local `src/main.tsx` sets the `__OPENCHAMBER_MINIAPP_HOST__` marker, initializes
 - Connect Telegram BackButton to the same upstream `handleNativeBack` callback used by the mobile shell.
 - Expose the upstream `MobileConnectionWelcome` / pairing screen in the Telegram browser host before a runtime endpoint is selected.
 - Bypass the browser password gate for this host only; OpenChamber pairing still has to succeed before the app runtime can initialize.
-- Add a short hint that instructs the user to choose Anywhere and paste the copied pairing link.
+- Add a short hint that instructs the user to choose Anywhere, scan the pairing QR code, or use the copied pairing link when scanner support is unavailable.
 
 Every transform requires exactly one upstream marker and fails the Vite build if a future upstream revision changes the expected source. Review this adapter when upgrading the submodule. Do not patch files under `vendor/openchamber`.
 
@@ -79,4 +79,6 @@ For an existing checkout:
 git submodule update --init --recursive
 ```
 
-To upgrade upstream, review the new commit, move the submodule pointer, run `npm ci`, `npm run typecheck` and `npm run build`, then update this document and `CHECKPOINT.md`.
+The `.github/workflows/upstream-sync.yml` workflow checks upstream `main` daily (and on manual dispatch). It compares the pinned commit with the fetched upstream head, refuses non-fast-forward history changes, then validates the candidate against this Mini App with `npm ci`, `npm run typecheck` and `npm run build`. A successful candidate creates or updates the review branch `automation/openchamber-upstream` and its pull request. The workflow updates only the Git submodule pointer; it never edits files inside `vendor/openchamber`.
+
+Review the upstream commit range and generated PR before merging. The merge into `main` triggers the production deployment workflow. There is no auto-merge and no deployment directly from the upstream watcher. Do not use `git submodule update --remote` to bypass this review path.

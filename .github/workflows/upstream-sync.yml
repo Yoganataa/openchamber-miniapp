@@ -1,0 +1,242 @@
+name: Sync OpenChamber upstream
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: openchamber-upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Check, verify, and propose upstream update
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout main and recursive submodules
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: npm
+
+      - name: Resolve latest upstream main
+        id: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          compare_upstream() {
+            curl --fail --silent --show-error --retry 3 --retry-delay 2 --retry-all-errors --max-time 30 \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/openchamber/openchamber/compare/$1...$2" |
+              jq -r '.status'
+          }
+
+          submodule="vendor/openchamber"
+          current_commit="$(git -C "$submodule" rev-parse HEAD)"
+
+          git -C "$submodule" fetch --no-tags origin refs/heads/main
+          target_commit="$(git -C "$submodule" rev-parse FETCH_HEAD)"
+
+          if [[ "$current_commit" == "$target_commit" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "OpenChamber submodule is already at upstream main ($target_commit)."
+            exit 0
+          fi
+
+          comparison_status="$(compare_upstream "$current_commit" "$target_commit")"
+
+          if [[ "$comparison_status" != "ahead" ]]; then
+            echo "::error::Upstream main is not a fast-forward from the current pin (comparison: $comparison_status). Manual review is required."
+            exit 1
+          fi
+
+          upstream_version="$(git -C "$submodule" show "${target_commit}:package.json" | node -e '
+            let input = "";
+            process.stdin.setEncoding("utf8");
+            process.stdin.on("data", (chunk) => { input += chunk; });
+            process.stdin.on("end", () => {
+              const manifest = JSON.parse(input);
+              if (typeof manifest.version !== "string" || manifest.version.length === 0) {
+                process.exitCode = 1;
+                return;
+              }
+              process.stdout.write(manifest.version);
+            });
+          ')"
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "current_commit=$current_commit" >> "$GITHUB_OUTPUT"
+          echo "target_commit=$target_commit" >> "$GITHUB_OUTPUT"
+          echo "version=$upstream_version" >> "$GITHUB_OUTPUT"
+
+          echo "Upstream main advanced from $current_commit to $target_commit (version $upstream_version)."
+
+      - name: Prepare automation branch and candidate submodule
+        id: candidate
+        if: steps.upstream.outputs.changed == 'true'
+        env:
+          BRANCH_NAME: automation/openchamber-upstream
+          SUBMODULE: vendor/openchamber
+          UPSTREAM_COMMIT: ${{ steps.upstream.outputs.target_commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          compare_upstream() {
+            curl --fail --silent --show-error --retry 3 --retry-delay 2 --retry-all-errors --max-time 30 \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/openchamber/openchamber/compare/$1...$2" |
+              jq -r '.status'
+          }
+
+          git fetch origin main
+
+          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+            git fetch origin "refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME"
+
+            remote_branch="refs/remotes/origin/$BRANCH_NAME"
+            branch_pin="$(git ls-tree "$remote_branch" "$SUBMODULE" | awk '{ print $3 }')"
+            if [[ ! "$branch_pin" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error::Could not resolve the upstream submodule pin on $BRANCH_NAME."
+              exit 1
+            fi
+
+            if ! git -C "$SUBMODULE" cat-file -e "${branch_pin}^{commit}" 2>/dev/null; then
+              git -C "$SUBMODULE" fetch --no-tags origin "$branch_pin"
+            fi
+
+            git switch --create "$BRANCH_NAME" --track "origin/$BRANCH_NAME"
+
+            # Keep the long-lived automation branch based on the latest main
+            # without rewriting its history or forcing an update to the PR.
+            git merge --no-edit origin/main
+          else
+            git switch --create "$BRANCH_NAME"
+          fi
+
+          branch_pin="$(git ls-tree HEAD "$SUBMODULE" | awk '{ print $3 }')"
+          if [[ ! "$branch_pin" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Could not resolve the upstream submodule pin on $BRANCH_NAME."
+            exit 1
+          fi
+
+          branch_commit="$branch_pin"
+          if [[ "$branch_commit" == "$UPSTREAM_COMMIT" ]]; then
+            echo "proposal_required=false" >> "$GITHUB_OUTPUT"
+            echo "The automation branch already contains the current upstream main. No new PR update is needed."
+            exit 0
+          fi
+
+          comparison_status="$(compare_upstream "$branch_commit" "$UPSTREAM_COMMIT")"
+
+          if [[ "$comparison_status" != "ahead" ]]; then
+            echo "::error::The automation branch pin is not a fast-forward to upstream main (comparison: $comparison_status). Manual review is required."
+            exit 1
+          fi
+
+          git -C "$SUBMODULE" checkout --detach "$UPSTREAM_COMMIT"
+          git add -- "$SUBMODULE"
+
+          if git diff --cached --quiet; then
+            echo "proposal_required=false" >> "$GITHUB_OUTPUT"
+            echo "No submodule pointer change remains to propose."
+            exit 0
+          fi
+
+          echo "proposal_required=true" >> "$GITHUB_OUTPUT"
+
+      - name: Install root dependencies
+        if: steps.candidate.outputs.proposal_required == 'true'
+        run: npm ci
+
+      - name: Typecheck Telegram host integration
+        if: steps.candidate.outputs.proposal_required == 'true'
+        run: npm run typecheck
+
+      - name: Build Mini App against candidate upstream
+        if: steps.candidate.outputs.proposal_required == 'true'
+        run: npm run build
+
+      - name: Commit and push upstream pin
+        if: steps.candidate.outputs.proposal_required == 'true'
+        env:
+          BRANCH_NAME: automation/openchamber-upstream
+          UPSTREAM_VERSION: ${{ steps.upstream.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(upstream): sync OpenChamber ${UPSTREAM_VERSION}"
+          git push --set-upstream origin "$BRANCH_NAME"
+
+      - name: Create or update upstream pull request
+        if: steps.candidate.outputs.proposal_required == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: automation/openchamber-upstream
+          UPSTREAM_VERSION: ${{ steps.upstream.outputs.version }}
+          UPSTREAM_COMMIT: ${{ steps.upstream.outputs.target_commit }}
+          CURRENT_COMMIT: ${{ steps.upstream.outputs.current_commit }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          title="chore(upstream): sync OpenChamber ${UPSTREAM_VERSION}"
+          body="$(cat <<EOF
+          ## Summary
+
+          - Update the \`vendor/openchamber\` submodule from \`main\`.
+          - Upstream version: \`${UPSTREAM_VERSION}\`.
+          - Previous pin: [\`${CURRENT_COMMIT:0:12}\`](https://github.com/openchamber/openchamber/commit/${CURRENT_COMMIT}).
+          - New pin: [\`${UPSTREAM_COMMIT:0:12}\`](https://github.com/openchamber/openchamber/commit/${UPSTREAM_COMMIT}).
+
+          ## Validation
+
+          The candidate was checked before this PR was created:
+
+          - \`npm ci\`
+          - \`npm run typecheck\`
+          - \`npm run build\`
+
+          [View the upstream sync and validation run]($RUN_URL).
+
+          ## Deployment and safety
+
+          - Review the upstream diff and the linked validation run before merging this PR to \`main\`.
+          - Merging to \`main\` invokes the existing TGCloud production deployment workflow.
+          - The deployment uses one \`npx tgcloud push\` after \`npx tgcloud fetch\`.
+          - No \`--force\`, database migration, or automatic merge is performed.
+          EOF
+          )"
+
+          existing_pr="$(gh pr list \
+            --base main \
+            --head "${GITHUB_REPOSITORY_OWNER}:$BRANCH_NAME" \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')"
+
+          if [[ -n "$existing_pr" ]]; then
+            gh pr edit "$existing_pr" --title "$title" --body "$body"
+            echo "Updated existing upstream PR #$existing_pr."
+          else
+            gh pr create --base main --head "$BRANCH_NAME" --title "$title" --body "$body"
+          fi

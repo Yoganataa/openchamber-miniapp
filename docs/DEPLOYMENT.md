@@ -1,5 +1,7 @@
 # Deployment
 
+This guide follows Telegram's [official Serverless documentation](https://core.telegram.org/bots/serverless) for Mini App static hosting, CLI authentication, project pushes, and the separation between code deployment and database migrations.
+
 ## Hosting model
 
 The Mini App frontend is hosted by **Telegram Serverless static hosting**. The OpenChamber Server remains on the machine you control; Telegram Serverless does not host or replace that server.
@@ -24,7 +26,7 @@ npm run typecheck
 npm run build
 ```
 
-This creates `dist/`. The local deployment script builds, fetches the latest deployed revision, then pushes the static frontend and the scoped backend modules:
+This creates `dist/`. The local deployment script builds the frontend, fetches the latest deployed revision, then publishes the configured static build and scoped Serverless modules in one push:
 
 ```bash
 npx tgcloud login
@@ -33,15 +35,14 @@ npm run deploy
 
 `npx tgcloud login` is interactive and saves the CLI Access Token in the ignored local `.tgcloud/` state. Do not commit that directory or paste the token into chat.
 
-For a manual split deployment after a build:
+For a manual deployment after a successful build:
 
 ```bash
 npx tgcloud fetch
-npx tgcloud push dist/
-npx tgcloud push tgcloud/
+npx tgcloud push
 ```
 
-The `dist/` target publishes only the static Mini App. The `tgcloud/` target publishes only Telegram Serverless modules. These targeted pushes do not delete the other part of the project. Neither command applies database migrations.
+Because `tgcloud.jsonc` configures `static.source` as `dist`, a full `npx tgcloud push` publishes the Mini App files and changed `.js` modules in `tgcloud/` together as one atomic deployment. It does not apply database migrations. Use a targeted push such as `npx tgcloud push dist/` only when you deliberately intend to publish just that part of the project.
 
 ## GitHub Actions deployment
 
@@ -53,8 +54,7 @@ It runs:
 2. `npm run typecheck`
 3. `npm run build`
 4. `npx tgcloud fetch`
-5. `npx tgcloud push dist/`
-6. `npx tgcloud push tgcloud/`
+5. `npx tgcloud push`
 
 The deploy job declares GitHub Environment `production` and maps the Environment secret to the variable TGCloud CLI expects:
 

@@ -65,5 +65,4 @@ jobs:
           fi
 
           npx tgcloud fetch
-          npx tgcloud push dist/
-          npx tgcloud push tgcloud/
+          npx tgcloud push

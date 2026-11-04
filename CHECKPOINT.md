@@ -3,8 +3,9 @@
 Last audited: 2026-11-04
 Repository: https://github.com/Yoganataa/openchamber-miniapp
 Default branch: main
-Working branch: main
+Working branch: feat/upstream-auto-sync
 PR #1 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/1
+PR #3 open: https://github.com/Yoganataa/openchamber-miniapp/pull/3 (upstream sync + TGCloud deploy workflow improvements; activation pending merge)
 
 ## Current state
 
@@ -20,10 +21,17 @@ PR #1 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/1
 - TGCloud published 944 static files (51.2 MB) and registered the optional `tgcloud/schema.js` module. The CLI-reported Mini App URL is `https://app8984347139.tgcloud.ai/`.
 - QR scanner redeployment: PR #2 merged as `b929a9d6384c515c6592ae3ddf7ebe6de1ea5038`; CI run 41771593637 passed; `main` CI run 41771745732 passed; TGCloud deploy run 41771745665 passed and uploaded the changed `dist/` bundle (38 files, 18.0 MB) to the same static URL.
 - The production deploy workflow successfully consumed Environment secret `ACCESS_TOKEN` through the `TGCLOUD_TOKEN` mapping. Main-branch CI run 41769613483 also passed `npm ci`, host typecheck, and the root-path build.
-- The deploy workflow targets GitHub Environment `production`, maps `secrets.ACCESS_TOKEN` to CLI variable `TGCLOUD_TOKEN`, then pushes `dist/` and `tgcloud/` using targeted commands without `--force` or database migrations.
+- The deploy workflow targets GitHub Environment `production`, maps `secrets.ACCESS_TOKEN` to CLI variable `TGCLOUD_TOKEN`, runs `npx tgcloud fetch`, then publishes the configured `dist/` static build and changed `tgcloud/` modules with one `npx tgcloud push`. This is a single atomic TGCloud deployment; it does not use `--force` or apply database migrations.
 - Environment `production` and secret `ACCESS_TOKEN` were shown by the user; allowed deployment branch is `main`. Secret values are not inspected.
 - Browser upstream persistence stores the issued client token in Telegram WebView local storage, unlike native app Keychain/Keystore. Revoke the paired device from the OpenChamber host when it should no longer have access.
 - Earlier npm install reported 10 dependency audit findings (5 low, 4 high, 1 critical). Review advisories before release; do not run `npm audit fix --force`.
+
+## Upstream maintenance
+
+- Proposed in PR #3: `.github/workflows/upstream-sync.yml` checks `openchamber/openchamber:main` daily at 02:17 UTC and on manual dispatch. It becomes active on `main` only after PR #3 is merged.
+- The watcher uses the GitHub compare API to require a fast-forward from the current pin, validates the candidate with `npm ci`, `npm run typecheck`, and `npm run build`, then creates or updates `automation/openchamber-upstream` and a review PR.
+- The watcher never merges or deploys. Merging the PR into `main` triggers the production workflow. The current pin remains `1e74724fc04026e3666f0802a6040f0f24c74226` (2.6.0); at audit time upstream `main` is 18 commits ahead and identifies as 2.6.1.
+- Production publishing now uses the official TGCloud full-project push: build, `npx tgcloud fetch`, then one `npx tgcloud push` to publish the configured `dist/` static site and changed `tgcloud/` modules atomically. It does not run migrations or use `--force`.
 
 ## Active phase
 
@@ -61,7 +69,7 @@ Phase 2 — Telegram pairing and remote runtime verification. Official UI adopti
 - Browser-mode client token persistence uses WebView local storage; revocation is performed at the OpenChamber host.
 - The upstream monorepo uses Bun, but this project must remain Node.js + npm only. Do not add a Bun lockfile or second package manager.
 - `npm run typecheck` checks local host glue; `npm run build` bundles the full pinned upstream renderer.
-- `npm run deploy` builds, fetches TGCloud state, then pushes `dist/` and `tgcloud/` separately. Never use `--force`; database migrations remain manual.
+- `npm run deploy` builds the frontend, fetches TGCloud state, then uses one `npx tgcloud push` to publish static assets and changed `tgcloud/` modules in one batch. Never use `--force`; database migrations remain manual.
 - GitHub Actions deployment only runs on `main` and consumes GitHub Environment `production` secret `ACCESS_TOKEN`, mapped to `TGCLOUD_TOKEN`.
 - `.tgcloud/` remains ignored local CLI state. Never inspect, expose or commit its credentials.
 
