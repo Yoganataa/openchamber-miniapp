@@ -18,6 +18,7 @@ const MOBILE_CONNECTIONS_SUFFIX = '/packages/ui/src/apps/mobileConnections.ts';
 const RUNTIME_AUTH_SUFFIX = '/packages/ui/src/lib/runtime-auth.ts';
 const RUNTIME_FETCH_SUFFIX = '/packages/ui/src/lib/runtime-fetch.ts';
 const RUNTIME_FETCH_INIT_MARKER = '  const requestInit = withSpaceDirectory(input, ownInit, directory);';
+const RUNTIME_FETCH_RELAY_MARKER = '  const relayPath = relay ? extractRelayPath(input, query) : null;';
 const RUNTIME_AUTH_COOKIE_MARKER = "credentials: 'include',";
 
 const ACCOUNT_SAVE_MARKERS = [
@@ -151,15 +152,19 @@ export function telegramBackButtonPlugin(): Plugin {
       }
 
       if (sourceId.endsWith(RUNTIME_FETCH_SUFFIX)) {
-        const occurrences = count(code, RUNTIME_FETCH_INIT_MARKER);
-        if (occurrences !== 1) {
+        const initOccurrences = count(code, RUNTIME_FETCH_INIT_MARKER);
+        const relayOccurrences = count(code, RUNTIME_FETCH_RELAY_MARKER);
+        if (initOccurrences !== 1 || relayOccurrences !== 1) {
           this.error(
-            `Expected one upstream runtime-fetch initialization marker, found ${occurrences}. Review the pinned OpenChamber revision before changing this adapter.`,
+            `Expected one upstream runtime-fetch init marker and relay marker, found init=${initOccurrences}, relay=${relayOccurrences}. Review the pinned OpenChamber revision before changing this adapter.`,
           );
         }
 
-        const isolatedRequestInit = `  const directoryRequestInit = withSpaceDirectory(input, ownInit, directory);
-  const runtimeTarget = relayPath === null ? resolveRuntimeFetchInput(input, query) : null;
+        const withDirectoryInit = code.replace(
+          RUNTIME_FETCH_INIT_MARKER,
+          '  const directoryRequestInit = withSpaceDirectory(input, ownInit, directory);',
+        );
+        const isolatedRequestInit = `  const runtimeTarget = relayPath === null ? resolveRuntimeFetchInput(input, query) : null;
   const isolateTelegramCookies = typeof window !== 'undefined'
     && window.__OPENCHAMBER_MINIAPP_HOST__ === true
     && (relayPath !== null || Boolean(runtimeTarget && shouldAttachRuntimeAuth(runtimeTarget)));
@@ -168,7 +173,10 @@ export function telegramBackButtonPlugin(): Plugin {
     : directoryRequestInit;`;
 
         return {
-          code: code.replace(RUNTIME_FETCH_INIT_MARKER, isolatedRequestInit),
+          code: withDirectoryInit.replace(
+            RUNTIME_FETCH_RELAY_MARKER,
+            `${RUNTIME_FETCH_RELAY_MARKER}\\n${isolatedRequestInit}`,
+          ),
           map: null,
         };
       }
