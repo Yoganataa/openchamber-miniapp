@@ -21,7 +21,7 @@ const ACCOUNT_SAVE_MARKERS = [
   "      await persistMetadata({ label, candidates: deviceCandidates, serverId, clientToken: issuedToken });",
   "          await persistMetadata({ id, label, candidates });",
   "      await persistMetadata({ id, label, candidates, clientToken: issuedToken });",
-  "      const next = await persistMobileConnection({ id: input.id, label, candidates, clientToken, requestHeaders });",
+  "      const next = await persistMetadata({ id: input.id, label, candidates, clientToken, requestHeaders });",
   "      const next = await deleteMobileConnection(id);",
 ];
 
