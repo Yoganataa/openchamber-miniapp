@@ -57,7 +57,7 @@ Phase 1 — Official mobile UI adoption. The renderer and Telegram host bridge a
 - npm run typecheck checks locally owned Telegram/Vite host glue; Vite build bundles the full upstream renderer and runtime.
 - npm run build:miniapp:same-origin builds for /miniapp/.
 - npm run deploy fetches the current TGCloud revision and pushes only tgcloud/ backend modules, not the frontend.
-- Automatic deployment runs only on main and only when tgcloud source/config, package manifest/lock, or the deploy workflow changes. Required repository Actions secret: TGCLOUD_TOKEN (the Telegram Serverless CLI Access Token, not the Bot API token).
+- Automatic deployment runs only on main and only when tgcloud source/config, package manifest/lock, or the deploy workflow changes. Required GitHub Environment `production` secret: `ACCESS_TOKEN`, mapped by the workflow to the CLI-required `TGCLOUD_TOKEN` variable (the Telegram Serverless CLI Access Token, not the Bot API token).
 - The deployment job runs npm ci, host typecheck, the /miniapp/ production build, then `npx tgcloud fetch` and targeted `npx tgcloud push tgcloud/`. It never uses --force.
 - TGCloud database migrations are not automated. Review migration output and apply separately if a future schema change requires it.
 - Upstream CORS accepts same-origin plus packaged/local-dev origins. OPENCHAMBER_FRAME_ANCESTORS controls CSP framing only; it is not a CORS allowlist.
