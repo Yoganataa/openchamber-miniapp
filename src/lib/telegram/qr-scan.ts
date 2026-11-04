@@ -13,19 +13,51 @@ type QrScanResult =
   | { status: 'invalid' }
   | { status: 'failed' };
 
-const parseScannedPayload = (raw: string): QrScanResult => {
+const decodeWrappedQrText = (raw: string): string => {
   const value = raw.trim();
+  if (/^openchamber:\/\//i.test(value)) return value;
+
+  // Some QR generators wrap deep links as percent-encoded text. Decode once
+  // only when the encoded protocol marker is present; never recursively decode.
+  if (/openchamber%3a%2f%2f/i.test(value)) {
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+};
+
+export const parseTelegramQrPayload = (raw: string): QrScanResult => {
+  const value = decodeWrappedQrText(raw);
   if (!value) return { status: 'invalid' };
 
   if (/^openchamber:\/\//i.test(value)) {
+    // Prefer the URL-API-free parser: some Telegram Android WebViews parse
+    // custom schemes as an empty hostname. The standard parser remains a
+    // compatibility fallback for runtime-specific URL behavior.
     const pairing =
-      parsePairingConnectionPayload(value) ??
-      parsePairingConnectionPayloadString(value);
+      parsePairingConnectionPayloadString(value) ??
+      parsePairingConnectionPayload(value);
 
     return pairing ? { status: 'pairing', pairing } : { status: 'invalid' };
   }
 
-  if (/^https?:\/\//i.test(value)) return { status: 'ok', url: value };
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      const url = new URL(value);
+      if ((url.protocol !== 'http:' && url.protocol !== 'https:') ||
+        !url.hostname || url.username || url.password) {
+        return { status: 'invalid' };
+      }
+      url.hash = '';
+      return { status: 'ok', url: url.toString() };
+    } catch {
+      return { status: 'invalid' };
+    }
+  }
+
   return { status: 'invalid' };
 };
 
@@ -87,11 +119,11 @@ export const scanTelegramConnectionQr = (
 
     try {
       showScanQrPopup(
-        { text: 'Scan an OpenChamber QR code' },
+        { text: 'Scan an OpenChamber pairing QR code' },
         (text) => {
           if (settled) return true;
 
-          const result = parseScannedPayload(text);
+          const result = parseTelegramQrPayload(text);
           if (result.status === 'invalid') return false;
 
           finish(result);
