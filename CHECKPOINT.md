@@ -9,11 +9,11 @@ PR #3 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/3 (merge com
 
 ## Current state
 
-- Security hardening is being implemented on `fix/telegram-account-isolation`; the pull request and verification are pending.
+- Security hardening is implemented on `fix/telegram-account-isolation` in PR #4. Latest CI run 41791226899 passed workflow validation, Serverless/RichMessage contracts, host typecheck, and the root-path production build. PR review and merge are pending.
 - New backend contract: one `telegram_instances` row per verified Telegram user ID, with `telegram_user_id` as the SQLite primary key and a stable server-generated instance ID. The database contains transport metadata only; it never stores OpenChamber client tokens.
 - New Serverless endpoints: `getMyInstance`, `saveMyInstance`, and `deleteMyInstance`. Each endpoint reads the owner exclusively from verified `ctx.initData.user.id`.
-- The Mini App host namespaces upstream browser storage by verified Telegram account, uses Telegram SecureStorage for per-device client credentials where supported, purges legacy origin-wide keys, disables cookie-based session inheritance, and waits for account mapping/credential persistence before pairing or login completes.
-- The bot private-chat `/start` handler sends a Bot API 10.3 RichMessage with greeting, connection instructions, Terms of Service, Privacy Policy, FAQ, compact ownership table, expandable quotation, and Mini App button.
+- The Mini App host namespaces upstream browser storage by verified Telegram account, uses Telegram SecureStorage for per-device client credentials where supported, purges legacy origin-wide keys, forces `credentials: omit` for all active OpenChamber runtime requests (direct and Private Relay), and waits for account mapping/credential persistence before pairing or login completes.
+- The bot private-chat `/start` handler sends a Bot API 10.3 RichMessage with greeting, connection instructions, Terms of Service, Privacy Policy, FAQ, compact ownership table, expandable quotation, and Mini App button. The policy text is a product draft and should receive legal review before a public launch.
 - Production database changes remain manual: merge/deploy the schema, then run the `Migrate Telegram Serverless database` workflow against `main`. No migration has been run for this change yet. The existing owner must pair once after the legacy storage purge.
 
 - The root app uses the official OpenChamber mobile browser entry from the recursive `vendor/openchamber` submodule.
