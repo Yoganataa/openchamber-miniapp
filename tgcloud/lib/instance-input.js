@@ -69,9 +69,15 @@ export const normalizeInstanceInput = (input) => {
 
   if (candidates.some((candidate) => candidate === null)) return null;
 
-  const serverId = boundedString(input.serverId, 128)
-    || candidates.find((candidate) => candidate.kind === 'relay')?.relay.serverId
-    || null;
+  const providedServerId = boundedString(input.serverId, 128);
+  const relayServerId = candidates.find((candidate) => candidate.kind === 'relay')?.relay.serverId ?? null;
+
+  // A direct /health identity and the relay's pinned server identity must
+  // describe the same OpenChamber host. Reject inconsistent metadata rather
+  // than persisting a mapping that could later match the wrong device token.
+  if (providedServerId && relayServerId && providedServerId !== relayServerId) return null;
+
+  const serverId = providedServerId || relayServerId;
 
   return { serverId, label, candidates };
 };
