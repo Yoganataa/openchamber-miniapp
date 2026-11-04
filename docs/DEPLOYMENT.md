@@ -101,7 +101,7 @@ The local deploy script runs `npx tgcloud fetch` first, then `npx tgcloud push t
 The deployment job explicitly targets the GitHub Environment named `production`. Store the Telegram Serverless **CLI Access Token** as an **Environment secret** in that environment, not as an environment variable:
 
 - Environment name: `production`
-- Secret name: `TGCLOUD_TOKEN`
+- Secret name: `ACCESS_TOKEN`
 - Secret value: the Telegram Serverless CLI Access Token from BotFather → your bot → Serverless → CLI Access.
 
 In GitHub, open **Settings → Environments → production → Environment secrets → Add secret**. The workflow references it as `secrets.TGCLOUD_TOKEN`; environment secrets are only made available to jobs that declare the matching `environment`. Do not paste the value into the repository, a workflow file, or chat.
@@ -116,7 +116,7 @@ Create an **Environment secret** with this exact name in the GitHub Environment 
 TGCLOUD_TOKEN
 ```
 
-Its value must be the **Telegram Serverless CLI Access Token** from BotFather → your bot → Serverless → CLI Access → Access token. This is distinct from the Telegram Bot API token. The CLI reads `TGCLOUD_TOKEN` directly in CI and does not write the value into `.tgcloud/credentials` or the repository. The workflow passes it only to the deployment step.
+Its value must be the **Telegram Serverless CLI Access Token** from BotFather → your bot → Serverless → CLI Access → Access token. This is distinct from the Telegram Bot API token. The workflow maps the Environment secret `ACCESS_TOKEN` to the CLI-required variable `TGCLOUD_TOKEN` and does not write the value into `.tgcloud/credentials` or the repository. The workflow passes it only to the deployment step.
 
 Before pushing, the workflow runs `npm ci`, `npm run typecheck`, and `npm run build:miniapp:same-origin`. The deploy step then runs:
 
@@ -139,5 +139,5 @@ The starter `tgcloud/handlers/message.js` echo handler has been removed. No chat
 - [ ] Chat streaming and WebSocket upgrades succeed through the same-origin reverse proxy.
 - [ ] Telegram Web embedding works with a narrowly scoped CSP `frame-ancestors` policy.
 - [ ] Telegram Android, iOS, Desktop, and Telegram Web are tested separately.
-- [ ] The repository Actions secret is named `TGCLOUD_TOKEN` and the first main-branch TGCloud deployment succeeds.
+- [ ] The repository Actions secret is named `ACCESS_TOKEN` and the first main-branch TGCloud deployment succeeds.
 - [ ] Check `npx tgcloud webhook` after changing the deployed handlers; run `npx tgcloud webhook sync` only when the reported state is out of sync and the change is intended.
