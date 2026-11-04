@@ -1,5 +1,7 @@
 # Deployment
 
+This guide follows Telegram's [official Serverless documentation](https://core.telegram.org/bots/serverless) for Mini App static hosting, CLI authentication, project pushes, and the separation between code deployment and database migrations.
+
 ## Hosting model
 
 The Mini App frontend is hosted by **Telegram Serverless static hosting**. The OpenChamber Server remains on the machine you control; Telegram Serverless does not host or replace that server.
