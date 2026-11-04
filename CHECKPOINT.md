@@ -13,11 +13,12 @@ PR #1 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/1
 - Root Vite app loads `packages/web/src/mobile-main.tsx`, which creates the official browser RuntimeAPIs and renders the upstream mobile UI.
 - `src/main.tsx` initializes Telegram lifecycle/viewport/theme and marks this host as a pairing-first Mini App. It does not hardcode an OpenChamber server URL.
 - The local guarded Vite bridge keeps Telegram BackButton aligned with upstream navigation and exposes upstream pairing-v2 onboarding to the browser host. It fails the build when its upstream source markers no longer match.
-- The currently deployed build still hides Scan QR because upstream checks only the Capacitor BarcodeScanner plugin. Branch `fix/telegram-native-qr-scan-popup` now adapts the upstream Scan QR action to Telegram's native `showScanQrPopup` API, validates payloads with upstream pairing-v2 parsers, and keeps manual link entry as fallback; this fix is not deployed yet.
+- The upstream Scan QR action is now adapted to Telegram's native `showScanQrPopup` API. PR #2 was merged on 2026-11-04 and the update was deployed successfully in TGCloud run 41771745665. The adapter validates scanned payloads with upstream pairing-v2 parsers; manual link entry remains the fallback on Telegram clients without the scanner API (requires WebApp version 7.7+ for the popup-close event).
 - Choose **Anywhere** in OpenChamber's Add a device flow to include the official Private Relay transport. The Mini App uses the upstream pairing redemption and E2E relay implementation; it does not need a separately hosted OpenChamber API or custom relay.
 - TGCloud static hosting is configured to publish Vite `dist/` at the root. TGCloud backend modules remain optional and scoped under `tgcloud/`.
 - Production deployment completed successfully on 2026-11-04 via GitHub Actions run 41769613500 at merge commit `daabac4cb111faadfe2b6393bcea46fa65b4d242`.
 - TGCloud published 944 static files (51.2 MB) and registered the optional `tgcloud/schema.js` module. The CLI-reported Mini App URL is `https://app8984347139.tgcloud.ai/`.
+- QR scanner redeployment: PR #2 merged as `b929a9d6384c515c6592ae3ddf7ebe6de1ea5038`; CI run 41771593637 passed; `main` CI run 41771745732 passed; TGCloud deploy run 41771745665 passed and uploaded the changed `dist/` bundle (38 files, 18.0 MB) to the same static URL.
 - The production deploy workflow successfully consumed Environment secret `ACCESS_TOKEN` through the `TGCLOUD_TOKEN` mapping. Main-branch CI run 41769613483 also passed `npm ci`, host typecheck, and the root-path build.
 - The deploy workflow targets GitHub Environment `production`, maps `secrets.ACCESS_TOKEN` to CLI variable `TGCLOUD_TOKEN`, then pushes `dist/` and `tgcloud/` using targeted commands without `--force` or database migrations.
 - Environment `production` and secret `ACCESS_TOKEN` were shown by the user; allowed deployment branch is `main`. Secret values are not inspected.
@@ -26,24 +27,25 @@ PR #1 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/1
 
 ## Active phase
 
-Phase 2 — Telegram pairing and remote runtime verification. Official UI adoption, TGCloud static publication, and the production deployment are complete. Real Telegram pairing and live OpenChamber workflow tests remain.
+Phase 2 — Telegram pairing and remote runtime verification. Official UI adoption, TGCloud static publication, and Telegram-native QR scanner integration are deployed. Real QR camera flow, pairing-v2 redemption, Private Relay, and live OpenChamber workflow tests still require device verification.
 
 ## Completed implementation
 
 - React + TypeScript + Vite host scaffold with Node.js 24.14+ and npm only.
 - Pinned recursive OpenChamber mobile UI submodule, upstream browser entry, styles, fonts, assets and runtime.
 - Root-level Telegram lifecycle, viewport/theme bridge, safe-area styles and BackButton integration.
-- Guarded local Vite transforms that expose upstream pairing-v2 onboarding in the browser host without editing upstream source.
+- Guarded local Vite transforms that expose upstream pairing-v2 onboarding and route the upstream Scan QR action to Telegram's native QR popup without editing upstream source.
+- Telegram native QR popup adapter, upstream payload validation, cancel/abort handling, and manual-link fallback.
 - TGCloud static config for root-level `dist/` output.
 - Deployment script and GitHub Actions workflow for static Mini App plus scoped `tgcloud/` modules, using Environment secret `ACCESS_TOKEN`.
 - No echo handler, bot message handler, custom API proxy, new relay or automated database migration.
 
 ## Remaining work
 
-1. Complete CI and merge the QR scanner follow-up PR; verify the GitHub Actions TGCloud redeployment succeeds.
-2. Configure BotFather's Main Mini App URL as `https://app8984347139.tgcloud.ai/`; optionally configure the menu button to the same URL.
-3. Start OpenChamber Server on the user's machine. In **Settings → Remote Instances → Connect to this server → Add a device**, choose **Anywhere**, then create the QR/link.
-4. Open the Mini App and tap **Scan QR code**. Verify Telegram's native scanner opens and the pairing link is redeemed. Use **Copy → Connection link** and paste it manually only as fallback.
+1. Configure BotFather's Main Mini App URL as `https://app8984347139.tgcloud.ai/`; optionally configure the menu button to the same URL.
+2. Reload the Telegram Mini App. On Telegram clients exposing WebApp QR scanner support (version 7.7+), confirm **Scan QR code** is visible and opens Telegram's native scanner.
+3. Start OpenChamber Server on the user's machine. In **Settings → Remote Instances → Connect to this server → Add a device**, choose **Anywhere**, then create the QR code.
+4. Scan the QR code from the Mini App. Verify the scanner closes and pairing-v2 redeems automatically. Use **Copy → Connection link** and paste it manually only if that Telegram client lacks scanner support.
 5. Verify Private Relay connectivity, then exercise sessions, chat streaming, cancellation/reconnect, files, diffs and WebSocket-backed features; capture feedback and any errors.
 6. Verify BackButton, theme, viewport, safe area and keyboard behavior in Telegram Android, iOS, Desktop and Telegram Web.
 7. Review npm audit advisories, performance, accessibility and release/rollback procedures.
