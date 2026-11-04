@@ -46,11 +46,11 @@ When the relay candidate is selected, the upstream browser runtime routes HTTP, 
 
 The browser version stores its client token in WebView local storage. Native Capacitor clients use Keychain/Keystore, but those native secure-storage APIs are not available to this Telegram browser host. Device access must be revoked from the OpenChamber host when no longer trusted.
 
-## QR scanner limitation
+## Telegram QR scanner adapter
 
-The upstream `mobileQrScan.ts` camera scanner depends on the native Capacitor BarcodeScanner plugin. Telegram Mini App is a browser WebView and does not provide that plugin, so the current Mini App does not expose the native Scan QR action. The official connection screen keeps its manual field open and accepts a pasted `openchamber://connect?...` pairing link.
+The upstream `mobileQrScan.ts` scanner depends on the native Capacitor BarcodeScanner plugin. The Telegram Mini App host replaces only the scanner import at build time and routes the existing upstream **Scan QR code** action to Telegram's native Mini App scanner API (`showScanQrPopup` / `closeScanQrPopup`). The popup returns the QR text to the local adapter, which validates the pairing-v2 payload with the upstream `connectionPayload.ts` parser. A valid payload is then handed to the existing upstream `redeemPairingConnection` flow; no pairing protocol is reimplemented.
 
-Do not claim in-app QR camera scanning until a browser scanner is implemented and tested on Telegram Android and iOS.
+The adapter feature-detects the popup API and the `scanQrPopupClosed` event (Telegram WebApp version 7.7+). Unsupported Telegram clients keep the upstream manual connection field available as a fallback. The scanner does not request raw camera access from the WebView and does not add a QR-decoder dependency.
 
 ## Typecheck boundary
 
