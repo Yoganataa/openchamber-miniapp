@@ -16,6 +16,8 @@ const MOBILE_ENTRY_SUFFIX = '/packages/ui/src/apps/renderMobileApp.tsx';
 const MOBILE_CONNECTION_SUFFIX = '/packages/ui/src/apps/MobileConnectionWelcome.tsx';
 const MOBILE_CONNECTIONS_SUFFIX = '/packages/ui/src/apps/mobileConnections.ts';
 const RUNTIME_AUTH_SUFFIX = '/packages/ui/src/lib/runtime-auth.ts';
+const RUNTIME_FETCH_SUFFIX = '/packages/ui/src/lib/runtime-fetch.ts';
+const RUNTIME_FETCH_INIT_MARKER = '  const requestInit = withSpaceDirectory(input, ownInit, directory);';
 const RUNTIME_AUTH_COOKIE_MARKER = "credentials: 'include',";
 
 const ACCOUNT_SAVE_MARKERS = [
@@ -146,6 +148,29 @@ export function telegramBackButtonPlugin(): Plugin {
         );
 
         return { code: transformed, map: null };
+      }
+
+      if (sourceId.endsWith(RUNTIME_FETCH_SUFFIX)) {
+        const occurrences = count(code, RUNTIME_FETCH_INIT_MARKER);
+        if (occurrences !== 1) {
+          this.error(
+            `Expected one upstream runtime-fetch initialization marker, found ${occurrences}. Review the pinned OpenChamber revision before changing this adapter.`,
+          );
+        }
+
+        const isolatedRequestInit = `  const directoryRequestInit = withSpaceDirectory(input, ownInit, directory);
+  const runtimeTarget = relayPath === null ? resolveRuntimeFetchInput(input, query) : null;
+  const isolateTelegramCookies = typeof window !== 'undefined'
+    && window.__OPENCHAMBER_MINIAPP_HOST__ === true
+    && (relayPath !== null || Boolean(runtimeTarget && shouldAttachRuntimeAuth(runtimeTarget)));
+  const requestInit = isolateTelegramCookies
+    ? { ...directoryRequestInit, credentials: 'omit' as const }
+    : directoryRequestInit;`;
+
+        return {
+          code: code.replace(RUNTIME_FETCH_INIT_MARKER, isolatedRequestInit),
+          map: null,
+        };
       }
 
       if (sourceId.endsWith(RUNTIME_AUTH_SUFFIX)) {
