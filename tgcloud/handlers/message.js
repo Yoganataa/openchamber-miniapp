@@ -16,16 +16,28 @@ export default async function (message) {
   const telegramUserId = message.from?.id;
   if (!Number.isSafeInteger(telegramUserId) || telegramUserId <= 0) return;
 
-  const instance = await db.select({ instanceId: telegramInstances.instanceId })
-    .from(telegramInstances)
-    .where(eq(telegramInstances.telegramUserId, telegramUserId))
-    .get();
+  let instance = null;
+  let databaseReady = true;
+
+  try {
+    instance = await db.select({ instanceId: telegramInstances.instanceId })
+      .from(telegramInstances)
+      .where(eq(telegramInstances.telegramUserId, telegramUserId))
+      .get();
+  } catch (error) {
+    // Deployment and schema migration are deliberately separate. Keep /start
+    // usable during that short rollout window without claiming an account has
+    // no instance or directing the user into a not-yet-ready Mini App.
+    databaseReady = false;
+    console.error('Failed to read Telegram instance ownership state.', error);
+  }
 
   await api.sendRichMessage({
     chat_id: message.chat.id,
     rich_message: buildWelcomeRichMessage({
       firstName: message.from.first_name,
       hasInstance: Boolean(instance),
+      databaseReady,
     }),
     protect_content: true,
   });
