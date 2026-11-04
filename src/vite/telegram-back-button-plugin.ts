@@ -15,6 +15,8 @@ const MOBILE_APP_SUFFIX = '/packages/ui/src/apps/MobileApp.tsx';
 const MOBILE_ENTRY_SUFFIX = '/packages/ui/src/apps/renderMobileApp.tsx';
 const MOBILE_CONNECTION_SUFFIX = '/packages/ui/src/apps/MobileConnectionWelcome.tsx';
 const MOBILE_CONNECTIONS_SUFFIX = '/packages/ui/src/apps/mobileConnections.ts';
+const RUNTIME_AUTH_SUFFIX = '/packages/ui/src/lib/runtime-auth.ts';
+const RUNTIME_AUTH_COOKIE_MARKER = "credentials: 'include',";
 
 const ACCOUNT_SAVE_MARKERS = [
   "      await persistMetadata({ id: saved?.id, label, candidates, clientToken: token, requestHeaders: headerUpdate });",
@@ -144,6 +146,23 @@ export function telegramBackButtonPlugin(): Plugin {
         );
 
         return { code: transformed, map: null };
+      }
+
+      if (sourceId.endsWith(RUNTIME_AUTH_SUFFIX)) {
+        const cookieOccurrences = count(code, RUNTIME_AUTH_COOKIE_MARKER);
+        if (cookieOccurrences !== 2) {
+          this.error(
+            `Expected two upstream runtime-auth cookie credential markers, found ${cookieOccurrences}. Review the pinned OpenChamber revision before changing this adapter.`,
+          );
+        }
+
+        return {
+          code: code.replaceAll(
+            RUNTIME_AUTH_COOKIE_MARKER,
+            "credentials: window.__OPENCHAMBER_MINIAPP_HOST__ === true ? 'omit' : 'include',",
+          ),
+          map: null,
+        };
       }
 
       if (sourceId.endsWith(MOBILE_CONNECTION_SUFFIX)) {
