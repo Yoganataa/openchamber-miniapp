@@ -8,6 +8,8 @@ on:
       - "src/**"
       - "index.html"
       - "vite.config.ts"
+      - "tsconfig.json"
+      - ".gitmodules"
       - "scripts/**"
       - "vendor/openchamber"
       - "tgcloud/**"
