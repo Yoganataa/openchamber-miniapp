@@ -7,6 +7,7 @@ const MOBILE_PAIRING_BOOT_GUARD_MARKER =
   '    if (isNativeMobileApp && !getRuntimeApiBaseUrl()) return;';
 const MINIAPP_ENTRY_AUTH_MARKER =
   '{isNativeShell ? app : <SessionAuthGate>{app}</SessionAuthGate>}';
+const MOBILE_QR_SCAN_IMPORT_MARKER = "import { isQrScanSupported, parseConnectionPayload, scanConnectionQr } from './mobileQrScan';";
 const MINIAPP_PAIRING_HINT_MARKER =
   '                  <form className="flex w-full flex-col gap-3 pt-3" onSubmit={handleSubmit}>';
 
@@ -96,21 +97,28 @@ export function telegramBackButtonPlugin(): Plugin {
       }
 
       if (sourceId.endsWith(MOBILE_CONNECTION_SUFFIX)) {
-        const occurrences = count(code, MINIAPP_PAIRING_HINT_MARKER);
-        if (occurrences !== 1) {
+        const importOccurrences = count(code, MOBILE_QR_SCAN_IMPORT_MARKER);
+        const formOccurrences = count(code, MINIAPP_PAIRING_HINT_MARKER);
+        if (importOccurrences !== 1 || formOccurrences !== 1) {
           this.error(
-            `Expected one upstream mobile manual-connection form, found ${occurrences}. Review the pinned OpenChamber revision before changing this adapter.`,
+            `Expected one upstream QR scanner import and manual-connection form, found import=${importOccurrences}, form=${formOccurrences}. Review the pinned OpenChamber revision before changing this adapter.`,
           );
         }
-        const hint = `                  {window.__OPENCHAMBER_MINIAPP_HOST__ === true ? (
+
+        const telegramQrImports = `import { parseConnectionPayload } from './mobileQrScan';
+import { isTelegramQrScanSupported as isQrScanSupported, scanTelegramConnectionQr as scanConnectionQr } from '/src/lib/telegram/qr-scan';`;
+        const hostHint = `                  {window.__OPENCHAMBER_MINIAPP_HOST__ === true ? (
                     <p className="px-1 text-center typography-small text-muted-foreground">
-                      Choose Anywhere when creating the pairing link, then paste the copied OpenChamber link here.
+                      Choose Anywhere on the OpenChamber host, then scan its pairing QR code here.
                     </p>
                   ) : null}
 `;
+
         return {
-          code:code.replace(MINIAPP_PAIRING_HINT_MARKER, hint + MINIAPP_PAIRING_HINT_MARKER),
-          map:null,
+          code: code
+            .replace(MOBILE_QR_SCAN_IMPORT_MARKER, telegramQrImports)
+            .replace(MINIAPP_PAIRING_HINT_MARKER, hostHint + MINIAPP_PAIRING_HINT_MARKER),
+          map: null,
         };
       }
 
