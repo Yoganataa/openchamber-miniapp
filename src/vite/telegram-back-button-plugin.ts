@@ -21,7 +21,7 @@ export function telegramBackButtonPlugin(): Plugin {
     name: 'openchamber-telegram-host-bridge',
     enforce: 'pre',
     transform(code, id) {
-      const sourceId = id.split('?')[0].replaceAll('\\\\', '/');
+      const sourceId = id.split('?')[0].replaceAll('\\', '/');
 
       if (sourceId.endsWith(MOBILE_APP_SUFFIX)) {
         const backButtonOccurrences = count(code, MOBILE_APP_MARKER);
