@@ -17,7 +17,7 @@ export interface TelegramWebApp {
     callback: () => void,
   ): void;
   offEvent?(
-    event: 'themeChanged' | 'viewportChanged' | 'backButtonClicked',
+    event: 'themeChanged' | 'viewportChanged' | 'backButtonClicked' | 'scanQrPopupClosed',
     callback: () => void,
   ): void;
   BackButton?: {
