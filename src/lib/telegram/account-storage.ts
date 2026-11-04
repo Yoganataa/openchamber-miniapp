@@ -1,6 +1,7 @@
 export const MOBILE_CONNECTIONS_STORAGE_KEY = 'openchamber.mobile.connections.v1';
 
-const SECURE_TOKEN_KEY = 'openchamber_mobile_client_token';
+const SECURE_TOKENS_KEY = 'openchamber_mobile_tokens_v1';
+const DEVICE_ID_STORAGE_KEY = 'openchamber.mobile.deviceId';
 const STORAGE_PREFIX = 'openchamber.telegram-user.';
 const SECURE_STORAGE_TIMEOUT_MS = 4000;
 
@@ -46,6 +47,23 @@ const parseJsonArray = (value: string | null): unknown[] => {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+
+const parseSecureTokenMap = (value: string | null): Record<string, string> => {
+  if (!value) return {};
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!isRecord(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(([key, token]) =>
+        /^[a-zA-Z0-9_-]{16,64}$/.test(key)
+        && typeof token === 'string'
+        && token.trim().length > 0,
+      ),
+    );
+  } catch {
+    return {};
+  }
+};
 
 const secureStorageFor = (host: TelegramStorageHost): TelegramSecureStorage | null => {
   const secure = host.SecureStorage;
@@ -213,17 +231,26 @@ export const installTelegramAccountStorage = async (
 
   const secure = secureStorageFor(host);
   let secureStorageEnabled = Boolean(secure);
-  let secureToken: string | null = null;
+  let secureTokens: Record<string, string> = {};
   let credentialWrite = Promise.resolve();
+
+  // The upstream pairing flow already uses this ID as its device dedupe key.
+  // Reuse it so each Telegram account/device receives a separate OpenChamber
+  // token while SecureStorage consumes only one item per Telegram user.
+  let deviceId = baseLocalStorage.getItem(prefix + DEVICE_ID_STORAGE_KEY);
+  if (!deviceId || !/^[a-zA-Z0-9_-]{16,64}$/.test(deviceId)) {
+    deviceId = crypto.randomUUID();
+    baseLocalStorage.setItem(prefix + DEVICE_ID_STORAGE_KEY, deviceId);
+  }
   let connectionSync: ((connections: unknown[]) => void) | null = null;
   let syncEnabled = false;
 
   if (secure) {
     try {
       const value = await invokeSecureStorage<string | null>((callback) => {
-        secure.getItem(SECURE_TOKEN_KEY, callback);
+        secure.getItem(SECURE_TOKENS_KEY, callback);
       });
-      secureToken = typeof value === 'string' && value.trim() ? value : null;
+      secureTokens = parseSecureTokenMap(value);
     } catch {
       // Some Telegram clients expose the API surface but do not implement it.
       // Fall back to the Telegram-account-scoped WebView storage in that case.
@@ -231,19 +258,19 @@ export const installTelegramAccountStorage = async (
     }
   }
 
-  const persistCredential = (token: string | null): void => {
+  const persistCredentials = (): void => {
     if (!secure || !secureStorageEnabled) return;
     credentialWrite = credentialWrite.catch(() => undefined).then(async () => {
-      if (token) {
+      if (Object.keys(secureTokens).length > 0) {
         const saved = await invokeSecureStorage<boolean>((callback) => {
-          secure.setItem(SECURE_TOKEN_KEY, token, callback);
+          secure.setItem(SECURE_TOKENS_KEY, JSON.stringify(secureTokens), callback);
         });
-        if (saved === false) throw new Error('Telegram SecureStorage rejected the client token.');
+        if (saved === false) throw new Error('Telegram SecureStorage rejected the OpenChamber device-token map.');
       } else {
         const removed = await invokeSecureStorage<boolean>((callback) => {
-          secure.removeItem(SECURE_TOKEN_KEY, callback);
+          secure.removeItem(SECURE_TOKENS_KEY, callback);
         });
-        if (removed === false) throw new Error('Telegram SecureStorage did not remove the client token.');
+        if (removed === false) throw new Error('Telegram SecureStorage did not remove the OpenChamber device-token map.');
       }
     });
   };
@@ -256,8 +283,11 @@ export const installTelegramAccountStorage = async (
       : null;
 
     if (secureStorageEnabled) {
-      secureToken = token;
-      persistCredential(token);
+      const nextTokens = { ...secureTokens };
+      if (token) nextTokens[deviceId] = token;
+      else delete nextTokens[deviceId];
+      secureTokens = nextTokens;
+      persistCredentials();
       if (first) {
         const { clientToken: _clientToken, ...metadata } = first;
         void _clientToken;
@@ -281,6 +311,7 @@ export const installTelegramAccountStorage = async (
 
   const readConnectionValue = (raw: string | null): string | null => {
     const entries = parseJsonArray(raw).filter(isRecord).slice(0, 1);
+    const secureToken = secureTokens[deviceId];
     if (!secureStorageEnabled || !entries[0] || !secureToken) return raw;
     return JSON.stringify([{ ...entries[0], clientToken: secureToken }]);
   };
