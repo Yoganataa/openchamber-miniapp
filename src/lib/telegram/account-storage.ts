@@ -177,6 +177,15 @@ const createScopedStorage = (
   return storage as Storage;
 };
 
+const removeLegacyOriginKeys = (storage: Storage, prefix: string): void => {
+  const legacyKeys: string[] = [];
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index);
+    if (key && !key.startsWith(prefix)) legacyKeys.push(key);
+  }
+  for (const key of legacyKeys) storage.removeItem(key);
+};
+
 const replaceStorage = (property: 'localStorage' | 'sessionStorage', storage: Storage): void => {
   Object.defineProperty(window, property, {
     configurable: true,
@@ -196,6 +205,12 @@ export const installTelegramAccountStorage = async (
   const prefix = `${STORAGE_PREFIX}${verifiedTelegramUserId}.`;
   const baseLocalStorage = window.localStorage;
   const baseSessionStorage = window.sessionStorage;
+  // Remove origin-wide state left by versions that did not partition Telegram
+  // accounts. Never attribute those legacy tokens or session caches to the
+  // first Telegram account that happens to open the upgraded Mini App.
+  removeLegacyOriginKeys(baseLocalStorage, STORAGE_PREFIX);
+  removeLegacyOriginKeys(baseSessionStorage, STORAGE_PREFIX);
+
   const secure = secureStorageFor(host);
   let secureStorageEnabled = Boolean(secure);
   let secureToken: string | null = null;
