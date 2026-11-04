@@ -1,10 +1,15 @@
-name: Deploy Telegram Serverless
+name: Deploy Telegram Mini App
 
 on:
   push:
     branches:
       - main
     paths:
+      - "src/**"
+      - "index.html"
+      - "vite.config.ts"
+      - "scripts/**"
+      - "vendor/openchamber"
       - "tgcloud/**"
       - "tgcloud.jsonc"
       - "package.json"
@@ -21,7 +26,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Validate and deploy backend modules
+    name: Build and deploy Telegram Mini App
     if: github.ref == 'refs/heads/main'
     environment: production
     runs-on: ubuntu-latest
@@ -43,10 +48,10 @@ jobs:
       - name: Typecheck Telegram host integration
         run: npm run typecheck
 
-      - name: Build Mini App for same-origin hosting
-        run: npm run build:miniapp:same-origin
+      - name: Build Mini App for TGCloud root hosting
+        run: npm run build
 
-      - name: Deploy changed Telegram Serverless modules
+      - name: Deploy Mini App static files and scoped backend modules
         env:
           TGCLOUD_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         run: |
@@ -58,4 +63,5 @@ jobs:
           fi
 
           npx tgcloud fetch
+          npx tgcloud push dist/
           npx tgcloud push tgcloud/
