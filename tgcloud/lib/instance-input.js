@@ -1,8 +1,49 @@
 const MAX_LABEL_LENGTH = 80;
 const MAX_CANDIDATES = 12;
-const MAX_URL_LENGTH = 2048;
-const SENSITIVE_QUERY_PARAMETER =
-  /(?:access[_-]?token|token|api[_-]?key|secret|password|credential|authorization|^auth$|^grant$|^sig(?:nature)?$|^jwt$)/i;
+const MAX_DIRECT_URL_LENGTH = 2048;
+// Pairing-v2 itself caps the complete encoded payload at 16 KiB. A relay URL
+// can legitimately be longer than a normal direct API URL (for example a
+// self-hosted relay with a long routing path or signed query).
+const MAX_RELAY_URL_LENGTH = 16_384;
+
+const SENSITIVE_QUERY_PARAMETERS = new Set([
+  'accesskeyid',
+  'accesssecret',
+  'accesstoken',
+  'apikey',
+  'authorization',
+  'auth',
+  'authtoken',
+  'bearertoken',
+  'cfaccesstoken',
+  'cfaccessclientsecret',
+  'clientsecret',
+  'clienttoken',
+  'credential',
+  'credentials',
+  'grant',
+  'googleaccessid',
+  'idtoken',
+  'jwt',
+  'oauth',
+  'oauthtoken',
+  'password',
+  'passwd',
+  'pwd',
+  'refreshtoken',
+  'secret',
+  'secretaccesskey',
+  'session',
+  'sessionid',
+  'sessiontoken',
+  'sig',
+  'signature',
+  'token',
+  'xamzcredential',
+  'xamzsecuritytoken',
+  'xamzsignature',
+  'xgoogsignature',
+]);
 
 const isRecord = (value) =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -12,14 +53,17 @@ const boundedString = (value, maxLength) =>
     ? value.trim()
     : null;
 
+const isSensitiveQueryParameter = (key) =>
+  SENSITIVE_QUERY_PARAMETERS.has(key.toLowerCase().replace(/[^a-z0-9]/g, ''));
+
 const normalizeLabel = (value) => {
   if (typeof value !== 'string') return null;
   const label = value.trim();
   return label ? label.slice(0, MAX_LABEL_LENGTH) : null;
 };
 
-const parseUrl = (value, protocols, { allowQuery = false, preserveTrailingSlash = false } = {}) => {
-  if (!boundedString(value, MAX_URL_LENGTH)) return null;
+const parseUrl = (value, protocols, { allowQuery = false } = {}) => {
+  if (!boundedString(value, MAX_DIRECT_URL_LENGTH)) return null;
 
   try {
     const parsed = new URL(value);
@@ -29,15 +73,60 @@ const parseUrl = (value, protocols, { allowQuery = false, preserveTrailingSlash 
     if (parsed.search) {
       if (!allowQuery) return null;
       for (const key of parsed.searchParams.keys()) {
-        if (SENSITIVE_QUERY_PARAMETER.test(key)) return null;
+        if (isSensitiveQueryParameter(key)) return null;
       }
     }
     parsed.hash = '';
-    const normalized = parsed.toString();
-    return preserveTrailingSlash ? normalized : normalized.replace(/\/+$/g, '');
+    return parsed.toString().replace(/\/+$/g, '');
   } catch {
     return null;
   }
+};
+
+// This mirrors OpenChamber's pairing-v2 normalizeWsUrl contract: accept ws/wss,
+// preserve the relay path and ordinary query parameters, and strip only the
+// fragment. Account metadata is server-side, however, so credential-bearing
+// query strings must not be copied into Telegram's database. Drop the WHOLE
+// query from this metadata copy if any credential-like key is present. The
+// original candidate remains in the device's upstream local storage and is
+// still used by that device's live relay connection.
+const parseRelayUrl = (value) => {
+  if (typeof value !== 'string' || !value.trim()) {
+    return { url: null, reason: 'relay-url-missing' };
+  }
+  const raw = value.trim();
+  if (raw.length > MAX_RELAY_URL_LENGTH) {
+    return { url: null, reason: 'relay-url-too-long' };
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return { url: null, reason: 'relay-url-invalid-format' };
+  }
+
+  if (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') {
+    return { url: null, reason: 'relay-url-protocol-unsupported' };
+  }
+  if (!parsed.hostname) {
+    return { url: null, reason: 'relay-url-host-missing' };
+  }
+  // Browser WebSocket URLs with userinfo are not a supported auth mechanism.
+  // Do not silently persist or rewrite these credentials.
+  if (parsed.username || parsed.password) {
+    return { url: null, reason: 'relay-url-userinfo-not-supported' };
+  }
+
+  const containsCredentialQuery = [...parsed.searchParams.keys()].some(isSensitiveQueryParameter);
+  if (containsCredentialQuery) parsed.search = '';
+  parsed.hash = '';
+
+  const normalized = parsed.toString();
+  if (normalized.length > MAX_RELAY_URL_LENGTH) {
+    return { url: null, reason: 'relay-url-too-long' };
+  }
+  return { url: normalized, reason: null };
 };
 
 const validateCandidate = (candidate) => {
@@ -52,11 +141,8 @@ const validateCandidate = (candidate) => {
 
   if (candidate.kind === 'relay') {
     if (!isRecord(candidate.relay)) return { normalized: null, reason: 'relay-config-missing' };
-    const relayUrl = parseUrl(candidate.relay.relayUrl, ['ws:', 'wss:'], {
-      allowQuery: true,
-      preserveTrailingSlash: true,
-    });
-    if (!relayUrl) return { normalized: null, reason: 'relay-url-invalid-or-contains-credentials' };
+    const relayUrl = parseRelayUrl(candidate.relay.relayUrl);
+    if (!relayUrl.url) return { normalized: null, reason: relayUrl.reason };
 
     const serverId = boundedString(candidate.relay.serverId, 128);
     if (!serverId) return { normalized: null, reason: 'relay-server-identity-invalid' };
@@ -73,7 +159,7 @@ const validateCandidate = (candidate) => {
       normalized: {
         kind: 'relay',
         relay: {
-          relayUrl,
+          relayUrl: relayUrl.url,
           serverId,
           hostEncPubJwk: { kty: 'EC', crv: 'P-256', x, y },
         },
