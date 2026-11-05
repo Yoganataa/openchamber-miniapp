@@ -51,7 +51,15 @@ assert.equal(validateInstanceInput({
     kind: 'relay',
     relay: { ...relayCandidate.relay, relayUrl: 'https://relay.example/ws' },
   }],
-}).reason, 'candidate-1-relay-url-invalid-or-contains-credentials');
+}).reason, 'candidate-1-relay-url-protocol-unsupported');
+
+assert.equal(validateInstanceInput({
+  label: 'Relay URL with userinfo',
+  candidates: [{
+    kind: 'relay',
+    relay: { ...relayCandidate.relay, relayUrl: 'wss://user:password@relay.example/ws' },
+  }],
+}).reason, 'candidate-1-relay-url-userinfo-not-supported');
 assert.equal(validateInstanceInput({
   label: 'Conflicting host identity',
   serverId: 'server_02',
@@ -88,16 +96,45 @@ const relayWithTrailingPath = normalizeInstanceInput({
   }],
 });
 assert.equal(relayWithTrailingPath?.candidates[0]?.relay.relayUrl, 'wss://relay.example/ws/');
-assert.equal(normalizeInstanceInput({
+const relayWithCredentialQuery = normalizeInstanceInput({
   label: 'Relay credential query',
   candidates: [{
     kind: 'relay',
     relay: {
       ...relayCandidate.relay,
-      relayUrl: 'wss://relay.example/ws?access_token=secret',
+      relayUrl: 'wss://relay.example/ws?access_token=do-not-store&transport=websocket#discard-me',
     },
   }],
-}), null);
+});
+assert.equal(
+  relayWithCredentialQuery?.candidates[0]?.relay.relayUrl,
+  'wss://relay.example/ws',
+);
+assert.equal(JSON.stringify(relayWithCredentialQuery).includes('do-not-store'), false);
+
+const relayWithSignedQuery = normalizeInstanceInput({
+  label: 'Relay signed query',
+  candidates: [{
+    kind: 'relay',
+    relay: {
+      ...relayCandidate.relay,
+      relayUrl: 'wss://relay.example/ws?X-Amz-Credential=key&X-Amz-Signature=signature',
+    },
+  }],
+});
+assert.equal(relayWithSignedQuery?.candidates[0]?.relay.relayUrl, 'wss://relay.example/ws');
+
+const longRelayUrl = normalizeInstanceInput({
+  label: 'Long relay URL',
+  candidates: [{
+    kind: 'relay',
+    relay: {
+      ...relayCandidate.relay,
+      relayUrl: `wss://relay.example/${'r'.repeat(2500)}`,
+    },
+  }],
+});
+assert.ok(longRelayUrl?.candidates[0]?.relay.relayUrl.length > 2048);
 
 const longLabel = normalizeInstanceInput({
   label: ` ${'A'.repeat(100)} `,
