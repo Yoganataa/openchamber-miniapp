@@ -112,6 +112,23 @@ assert.equal(
 );
 assert.equal(JSON.stringify(relayWithCredentialQuery).includes('do-not-store'), false);
 
+const relayWithNestedCredentialKey = normalizeInstanceInput({
+  label: 'Relay nested credential query',
+  candidates: [{
+    kind: 'relay',
+    relay: {
+      ...relayCandidate.relay,
+      relayUrl: 'wss://relay.example/ws?X-Goog-Credential=credential&keep=route',
+    },
+  }],
+});
+assert.equal(relayWithNestedCredentialKey?.candidates[0]?.relay.relayUrl, 'wss://relay.example/ws');
+
+assert.equal(normalizeInstanceInput({
+  label: 'Direct nested credential query',
+  candidates: [{ kind: 'direct', url: 'https://host.example/?X-Goog-Credential=credential' }],
+}), null);
+
 const relayWithSignedQuery = normalizeInstanceInput({
   label: 'Relay signed query',
   candidates: [{
