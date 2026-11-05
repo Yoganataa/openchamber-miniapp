@@ -53,13 +53,15 @@ assert.equal(validateInstanceInput({
   }],
 }).reason, 'candidate-1-relay-url-protocol-unsupported');
 
-assert.equal(validateInstanceInput({
+const relayWithUserInfo = normalizeInstanceInput({
   label: 'Relay URL with userinfo',
   candidates: [{
     kind: 'relay',
     relay: { ...relayCandidate.relay, relayUrl: 'wss://user:password@relay.example/ws' },
   }],
-}).reason, 'candidate-1-relay-url-userinfo-not-supported');
+});
+assert.equal(relayWithUserInfo?.candidates[0]?.relay.relayUrl, 'wss://relay.example/ws');
+assert.equal(JSON.stringify(relayWithUserInfo).includes('password'), false);
 assert.equal(validateInstanceInput({
   label: 'Conflicting host identity',
   serverId: 'server_02',

@@ -117,11 +117,12 @@ const parseRelayUrl = (value) => {
   if (!parsed.hostname) {
     return { url: null, reason: 'relay-url-host-missing' };
   }
-  // Browser WebSocket URLs with userinfo are not a supported auth mechanism.
-  // Do not silently persist or rewrite these credentials.
-  if (parsed.username || parsed.password) {
-    return { url: null, reason: 'relay-url-userinfo-not-supported' };
-  }
+  // Browser pairing still uses the original device-local candidate. Never
+  // copy URL-embedded credentials into Telegram's server-side account row:
+  // strip them from this metadata copy instead of rejecting a redeemed pairing.
+  // The upstream local candidate remains untouched on the device.
+  parsed.username = '';
+  parsed.password = '';
 
   const containsCredentialQuery = [...parsed.searchParams.keys()].some(isSensitiveQueryParameter);
   if (containsCredentialQuery) parsed.search = '';
