@@ -53,8 +53,13 @@ const boundedString = (value, maxLength) =>
     ? value.trim()
     : null;
 
-const isSensitiveQueryParameter = (key) =>
-  SENSITIVE_QUERY_PARAMETERS.has(key.toLowerCase().replace(/[^a-z0-9]/g, ''));
+const SENSITIVE_QUERY_PARAMETER_PATTERN =
+  /(?:token|api.?key|secret|password|passwd|pwd|credential|authorization|^auth$|^grant$|^sig(?:nature)?$|^jwt$)/;
+
+const isSensitiveQueryParameter = (key) => {
+  const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return SENSITIVE_QUERY_PARAMETERS.has(normalized) || SENSITIVE_QUERY_PARAMETER_PATTERN.test(normalized);
+};
 
 const normalizeLabel = (value) => {
   if (typeof value !== 'string') return null;
