@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import { normalizeInstanceInput } from '../tgcloud/lib/instance-input.js';
+import { normalizeInstanceInput, validateInstanceInput } from '../tgcloud/lib/instance-input.js';
 import { buildWelcomeRichMessage } from '../tgcloud/lib/start-message.js';
 
 const directCandidate = { kind: 'direct', url: 'https://openchamber.example/' };
@@ -35,6 +35,29 @@ assert.deepEqual(normalized, {
 });
 assert.equal(Object.hasOwn(normalized, 'clientToken'), false);
 assert.equal(Object.hasOwn(normalized, 'instanceId'), false);
+
+assert.equal(validateInstanceInput({ label: 'Missing candidates' }).reason, 'candidates-not-array');
+assert.equal(validateInstanceInput({
+  label: 'Unsupported candidate',
+  candidates: [{ kind: 'other', value: 'ignored' }],
+}).reason, 'candidate-1-candidate-kind-unsupported');
+assert.equal(validateInstanceInput({
+  label: 'Missing relay config',
+  candidates: [{ kind: 'relay' }],
+}).reason, 'candidate-1-relay-config-missing');
+assert.equal(validateInstanceInput({
+  label: 'Bad relay URL',
+  candidates: [{
+    kind: 'relay',
+    relay: { ...relayCandidate.relay, relayUrl: 'https://relay.example/ws' },
+  }],
+}).reason, 'candidate-1-relay-url-invalid-or-contains-credentials');
+assert.equal(validateInstanceInput({
+  label: 'Conflicting host identity',
+  serverId: 'server_02',
+  candidates: [relayCandidate],
+}).reason, 'server-identities-conflict');
+
 
 // Pairing-v2 normalizes WebSocket URLs by removing fragments while preserving
 // non-secret query parameters. The account metadata validator must accept the
@@ -269,6 +292,8 @@ for (const endpoint of [getEndpoint, saveEndpoint, deleteEndpoint]) {
   assert.doesNotMatch(endpoint, /input\.telegramUserId|input\.userId/);
 }
 assert.match(saveEndpoint, /onConflictDoUpdate/);
+assert.match(saveEndpoint, /validateInstanceInput/);
+assert.match(saveEndpoint, /validation\.reason/);
 assert.match(saveEndpoint, /instanceId:\s*crypto\.randomUUID\(\)/);
 
 // Host startup must render accessible progress before the upstream renderer mounts.
