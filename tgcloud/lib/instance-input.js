@@ -26,9 +26,6 @@ const parseUrl = (value, protocols, { allowQuery = false, preserveTrailingSlash 
     if (!protocols.includes(parsed.protocol)) return null;
     if (!parsed.hostname || parsed.username || parsed.password) return null;
 
-    // OpenChamber's pairing-v2 parser preserves harmless relay query parameters
-    // but strips URL fragments. Keep that contract while refusing query keys
-    // that could turn a transport URL into a credential store.
     if (parsed.search) {
       if (!allowQuery) return null;
       for (const key of parsed.searchParams.keys()) {
@@ -76,32 +73,91 @@ const normalizeRelayCandidate = (candidate) => {
   };
 };
 
-export const normalizeInstanceInput = (input) => {
-  if (!isRecord(input) || !Array.isArray(input.candidates)) return null;
-  if (input.candidates.length < 1 || input.candidates.length > MAX_CANDIDATES) return null;
+const validateCandidate = (candidate) => {
+  if (!isRecord(candidate)) return { normalized: null, reason: 'candidate-not-object' };
 
-  // The upstream pairing label is operator-controlled. Bound it here instead
-  // of rejecting an otherwise valid pairing just because the label is long.
-  const label = normalizeLabel(input.label);
-  if (!label) return null;
+  if (candidate.kind === 'direct') {
+    const url = parseUrl(candidate.url, ['http:', 'https:'], { allowQuery: true });
+    return url
+      ? { normalized: { kind: 'direct', url }, reason: null }
+      : { normalized: null, reason: 'direct-url-invalid-or-contains-credentials' };
+  }
 
-  const candidates = input.candidates.map((candidate) => {
-    if (candidate?.kind === 'direct') return normalizeDirectCandidate(candidate);
-    if (candidate?.kind === 'relay') return normalizeRelayCandidate(candidate);
-    return null;
-  });
+  if (candidate.kind === 'relay') {
+    if (!isRecord(candidate.relay)) return { normalized: null, reason: 'relay-config-missing' };
+    const relayUrl = parseUrl(candidate.relay.relayUrl, ['ws:', 'wss:'], {
+      allowQuery: true,
+      preserveTrailingSlash: true,
+    });
+    if (!relayUrl) return { normalized: null, reason: 'relay-url-invalid-or-contains-credentials' };
 
-  if (candidates.some((candidate) => candidate === null)) return null;
+    const serverId = boundedString(candidate.relay.serverId, 128);
+    if (!serverId) return { normalized: null, reason: 'relay-server-identity-invalid' };
 
-  const providedServerId = boundedString(input.serverId, 128);
-  const relayServerId = candidates.find((candidate) => candidate.kind === 'relay')?.relay.serverId ?? null;
+    const jwk = candidate.relay.hostEncPubJwk;
+    if (!isRecord(jwk) || jwk.kty !== 'EC' || jwk.crv !== 'P-256') {
+      return { normalized: null, reason: 'relay-public-key-algorithm-invalid' };
+    }
+    const x = boundedString(jwk.x, 256);
+    const y = boundedString(jwk.y, 256);
+    if (!x || !y) return { normalized: null, reason: 'relay-public-key-coordinates-invalid' };
 
-  // A direct /health identity and the relay's pinned server identity must
-  // describe the same OpenChamber host. Reject inconsistent metadata rather
-  // than persisting a mapping that could later match the wrong device token.
-  if (providedServerId && relayServerId && providedServerId !== relayServerId) return null;
+    return {
+      normalized: {
+        kind: 'relay',
+        relay: {
+          relayUrl,
+          serverId,
+          hostEncPubJwk: { kty: 'EC', crv: 'P-256', x, y },
+        },
+      },
+      reason: null,
+    };
+  }
 
-  const serverId = providedServerId || relayServerId;
-
-  return { serverId, label, candidates };
+  return { normalized: null, reason: 'candidate-kind-unsupported' };
 };
+
+export const validateInstanceInput = (input) => {
+  if (!isRecord(input)) return { normalized: null, reason: 'payload-not-object' };
+  if (!Array.isArray(input.candidates)) return { normalized: null, reason: 'candidates-not-array' };
+  if (input.candidates.length < 1 || input.candidates.length > MAX_CANDIDATES) {
+    return { normalized: null, reason: 'candidate-count-out-of-range' };
+  }
+
+  const label = normalizeLabel(input.label);
+  if (!label) return { normalized: null, reason: 'label-invalid' };
+
+  const validatedCandidates = input.candidates.map(validateCandidate);
+  const invalidIndex = validatedCandidates.findIndex((candidate) => candidate.normalized === null);
+  if (invalidIndex !== -1) {
+    return {
+      normalized: null,
+      reason: `candidate-${invalidIndex + 1}-${validatedCandidates[invalidIndex].reason}`,
+    };
+  }
+
+  const candidates = validatedCandidates.map((candidate) => candidate.normalized);
+  const providedServerId = input.serverId === undefined || input.serverId === null
+    ? null
+    : boundedString(input.serverId, 128);
+  if (input.serverId !== undefined && input.serverId !== null && !providedServerId) {
+    return { normalized: null, reason: 'server-identity-invalid' };
+  }
+
+  const relayServerId = candidates.find((candidate) => candidate.kind === 'relay')?.relay.serverId ?? null;
+  if (providedServerId && relayServerId && providedServerId !== relayServerId) {
+    return { normalized: null, reason: 'server-identities-conflict' };
+  }
+
+  return {
+    normalized: {
+      serverId: providedServerId || relayServerId,
+      label,
+      candidates,
+    },
+    reason: null,
+  };
+};
+
+export const normalizeInstanceInput = (input) => validateInstanceInput(input).normalized;
