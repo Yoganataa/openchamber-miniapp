@@ -40,39 +40,6 @@ const parseUrl = (value, protocols, { allowQuery = false, preserveTrailingSlash 
   }
 };
 
-const normalizeDirectCandidate = (candidate) => {
-  if (!isRecord(candidate) || candidate.kind !== 'direct') return null;
-  const url = parseUrl(candidate.url, ['http:', 'https:'], { allowQuery: true });
-  return url ? { kind: 'direct', url } : null;
-};
-
-const normalizeRelayCandidate = (candidate) => {
-  if (!isRecord(candidate) || candidate.kind !== 'relay' || !isRecord(candidate.relay)) return null;
-
-  const relayUrl = parseUrl(candidate.relay.relayUrl, ['ws:', 'wss:'], {
-    allowQuery: true,
-    preserveTrailingSlash: true,
-  });
-  const serverId = boundedString(candidate.relay.serverId, 128);
-  const jwk = candidate.relay.hostEncPubJwk;
-
-  if (!relayUrl || !serverId || !isRecord(jwk)) return null;
-  if (jwk.kty !== 'EC' || jwk.crv !== 'P-256') return null;
-
-  const x = boundedString(jwk.x, 256);
-  const y = boundedString(jwk.y, 256);
-  if (!x || !y) return null;
-
-  return {
-    kind: 'relay',
-    relay: {
-      relayUrl,
-      serverId,
-      hostEncPubJwk: { kty: 'EC', crv: 'P-256', x, y },
-    },
-  };
-};
-
 const validateCandidate = (candidate) => {
   if (!isRecord(candidate)) return { normalized: null, reason: 'candidate-not-object' };
 
