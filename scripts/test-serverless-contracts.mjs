@@ -87,6 +87,12 @@ assert.equal(normalizeInstanceInput({
   candidates: [{ kind: 'direct', url: 'https://user:password@host.example' }],
 }), null);
 
+const directWithRoutingQuery = normalizeInstanceInput({
+  label: 'Direct routing query',
+  candidates: [{ kind: 'direct', url: 'https://host.example/?transport=websocket#discard-me' }],
+});
+assert.equal(directWithRoutingQuery?.candidates[0]?.url, 'https://host.example/?transport=websocket');
+
 assert.equal(normalizeInstanceInput({
   label: 'Query URL',
   candidates: [{ kind: 'direct', url: 'https://host.example/?token=secret' }],
