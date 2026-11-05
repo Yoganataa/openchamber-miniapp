@@ -3,6 +3,11 @@ import { eq, sql } from 'sdk/db';
 import { telegramInstances } from '../schema.js';
 import { validateInstanceInput } from '../lib/instance-input.js';
 
+// Bump this marker and redeploy this endpoint whenever the shared validator
+// changes. TGCloud deploys changed modules incrementally; changing only the
+// helper file must not leave an endpoint bundle with older validation logic.
+const INSTANCE_VALIDATOR_CONTRACT = 'relay-url-contract-v2';
+
 const requireTelegramUserId = (ctx) => {
   const userId = ctx?.initData?.user?.id;
   if (!Number.isSafeInteger(userId) || userId <= 0) {
@@ -19,7 +24,7 @@ export default async function (input, ctx) {
     // Expose only a stable field/category code. Never include candidate URLs,
     // query values, account IDs, relay public-key material, or input contents.
     throw new EndpointError(
-      `Invalid OpenChamber instance metadata: ${validation.reason || 'invalid-payload'}.`,
+      `Invalid OpenChamber instance metadata [${INSTANCE_VALIDATOR_CONTRACT}]: ${validation.reason || 'invalid-payload'}.`,
       { code: 'INVALID_INSTANCE' },
     );
   }
