@@ -350,6 +350,7 @@ for (const endpoint of [getEndpoint, saveEndpoint, deleteEndpoint]) {
 assert.match(saveEndpoint, /onConflictDoUpdate/);
 assert.match(saveEndpoint, /validateInstanceInput/);
 assert.match(saveEndpoint, /validation\.reason/);
+assert.match(saveEndpoint, /relay-url-contract-v2/);
 assert.match(saveEndpoint, /instanceId:\s*crypto\.randomUUID\(\)/);
 
 // Host startup must render accessible progress before the upstream renderer mounts.
