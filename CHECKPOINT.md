@@ -1,6 +1,6 @@
 # Checkpoint
 
-Last audited: 2026-11-04
+Last audited: 2026-11-05
 Repository: https://github.com/Yoganataa/openchamber-miniapp
 Default branch: main
 Last audited main head: `b3b10d6a18e717e92c8bb6818d3d2782a760ae05`
@@ -19,7 +19,7 @@ PR #5 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/5 (merge com
 - New Serverless endpoints: `getMyInstance`, `saveMyInstance`, and `deleteMyInstance`. Each endpoint reads the owner exclusively from verified `ctx.initData.user.id`.
 - The Mini App host namespaces upstream browser storage by verified Telegram account, uses Telegram SecureStorage for per-device client credentials where supported, purges legacy origin-wide keys, forces `credentials: omit` for all active OpenChamber runtime requests (direct and Private Relay), rejects cookie-only login, and waits for account mapping/credential persistence before pairing or login completes.
 - The bot private-chat `/start` handler sends a Bot API 10.3 RichMessage with greeting, connection instructions, Terms of Service, Privacy Policy, FAQ, compact ownership table, expandable quotation, and Mini App button. The policy text is a product draft and should receive legal review before a public launch.
-- Production database changes remain manual and are not part of the deploy workflow. The PR #4 schema deployment completed on `main` by run 41803319896; PR #5's app deployment completed by run 41864367277. Migration run 41871919619 failed only because the non-interactive GitHub runner invoked `npx tgcloud migrate` without a required mode flag; `npx tgcloud fetch` succeeded and updated the snapshot to cloud revision 6. The workflow now invokes `npx tgcloud migrate --safe`, which auto-applies additive/safe changes and skips warning/destructive and manual changes. It intentionally does not use `--yes`. The production migration remains pending until the corrected manual workflow is run and verified successful. The existing owner must pair again after the legacy storage purge.
+- Production database changes remain manual and are not part of the deploy workflow. The PR #4 schema deployment completed on `main` by run 41803319896; PR #5's app deployment completed by run 41864367277. Migration run 41871919619 failed only because the non-interactive GitHub runner invoked `npx tgcloud migrate` without a required mode flag; `npx tgcloud fetch` succeeded and updated the snapshot to cloud revision 6. The workflow now invokes `npx tgcloud migrate --safe`, which auto-applies additive/safe changes and skips warning/destructive and manual changes. It intentionally does not use `--yes`. Production database migration is now verified: manual migration run 41964142017 completed successfully on 2026-11-05; TGCloud reported that the schema was already in sync with `tgcloud/schema.js`. The existing owner must pair again after the legacy storage purge.
 
 - The root app uses the official OpenChamber mobile browser entry from the recursive `vendor/openchamber` submodule.
 - Upstream pin: `1e74724fc04026e3666f0802a6040f0f24c74226`, OpenChamber 2.6.0. Upstream source remains untouched.
@@ -35,7 +35,7 @@ PR #5 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/5 (merge com
 - QR scanner redeployment: PR #2 merged as `b929a9d6384c515c6592ae3ddf7ebe6de1ea5038`; CI run 41771593637 passed; `main` CI run 41771745732 passed; TGCloud deploy run 41771745665 passed and uploaded the changed `dist/` bundle (38 files, 18.0 MB) to the same static URL.
 - The production deploy workflow successfully consumed Environment secret `ACCESS_TOKEN` through the `TGCLOUD_TOKEN` mapping. Main-branch CI run 41769613483 also passed `npm ci`, host typecheck, and the root-path build.
 - The deploy workflow targets GitHub Environment `production`, maps `secrets.ACCESS_TOKEN` to CLI variable `TGCLOUD_TOKEN`, runs `npx tgcloud fetch`, then publishes the configured `dist/` static build and changed `tgcloud/` modules with one `npx tgcloud push`. This is a single atomic TGCloud deployment; it does not use `--force` or apply database migrations.
-- The manual migration workflow uses `npx tgcloud migrate --safe` to satisfy the CLI's non-interactive requirement without auto-approving destructive warnings. `scripts/validate-github-workflows.mjs` now guards against removing `--safe` or replacing it with `--yes`. Deployment instructions include the local `--dry-run` review step.
+- The manual migration workflow uses `npx tgcloud migrate --safe` to satisfy the CLI's non-interactive requirement without auto-approving destructive warnings. Migration run 41964142017 succeeded and confirmed there were no outstanding schema changes. `scripts/validate-github-workflows.mjs` guards against removing `--safe` or replacing it with `--yes`. Deployment instructions include the local `--dry-run` review step.
 - Environment `production` and secret `ACCESS_TOKEN` were shown by the user; allowed deployment branch is `main`. Secret values are not inspected.
 - Before account-isolation rollout, browser upstream persistence stored the issued client token in origin-wide WebView local storage. The account-scoped storage migration intentionally purges those legacy origin-wide keys and does not attribute the old token to a Telegram account.
 - Upstream `mobile.connect.error.authRequired` is a generic pairing/login message used when pairing redemption fails, a response omits a client token, or native secure-token persistence fails. The old host transform also allowed Telegram account-sync failures to fall through the same generic pairing error path. PR #5 separates `[telegram-instance-sync]` failures and shows a dedicated account-save error. It also accepts harmless Private Relay URL query parameters (while rejecting credential-bearing keys), strips fragments, and bounds labels to match pairing-v2 metadata semantics. This explains a plausible source of the reported red message, but a real post-deploy Telegram scan is still required to confirm the user's exact runtime path.
@@ -50,7 +50,7 @@ PR #5 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/5 (merge com
 
 ## Active phase
 
-Phase 2 — Telegram account isolation, pairing and remote runtime verification. PR #4 and PR #5 are merged; PR #5's main CI and TGCloud deployment succeeded. The account-isolation database migration remains pending after a non-interactive CLI invocation error; the workflow command is fixed to use safe-only mode and needs a manual rerun. Real QR camera flow, pairing-v2 redemption, Private Relay, and live OpenChamber workflows still require verification on the actual Telegram bot/devices.
+Phase 2 — Telegram account isolation, pairing and remote runtime verification. PR #4 and PR #5 are merged; PR #5's main CI and TGCloud deployment succeeded. The account-isolation database migration is applied/verified (run 41964142017). The remaining active blocker is post-redemption Telegram account-metadata persistence, which is being investigated separately. Real QR camera flow, pairing-v2 redemption, Private Relay, and live OpenChamber workflows still require verification on the actual Telegram bot/devices.
 
 ## Completed implementation
 
@@ -67,8 +67,8 @@ Phase 2 — Telegram account isolation, pairing and remote runtime verification.
 ## Remaining work
 
 1. PR #5 main CI run 41864367356 and TGCloud deployment run 41864367277 passed; the app code is deployed.
-2. Manually rerun **Migrate Telegram Serverless database** from GitHub Actions on `main`. The workflow now uses `npx tgcloud migrate --safe`; confirm that the migration job completes successfully. Do not use `--yes`.
-3. Reload the deployed Mini App. Because pairing-v2 links are single-use and the account-scoped migration purges legacy credentials, create a fresh **Anywhere** pairing QR/link and scan it again if the previous link was consumed.
+2. [x] Apply and verify the production SQLite migration: run 41964142017 completed successfully; TGCloud reported no schema changes and the database is in sync.
+3. Resolve and retest the post-redemption account-save error. The deployed host error identifies `[telegram-instance-sync]`; a likely metadata mismatch was found where harmless direct transport query parameters were rejected even though upstream pairing parsing preserves them. After this fix is deployed, reload the Mini App and create a fresh **Anywhere** QR because pairing-v2 links are single-use.
 4. Verify the reported pairing error is gone. Confirm that pairing writes one Telegram-owned instance record and a device client token, then that the app loads the official OpenChamber mobile runtime through direct/Private Relay transport.
 5. Test two Telegram accounts in the same Telegram client: the owner's account must restore only its own instance; the second account must see a clean onboarding and must not inherit any server session.
 6. Test two devices on the same Telegram account: the server-side `instance_id` must remain stable while each device uses its own client credential.
