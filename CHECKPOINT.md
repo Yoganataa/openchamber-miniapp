@@ -3,7 +3,7 @@
 Last audited: 2026-11-05
 Repository: https://github.com/Yoganataa/openchamber-miniapp
 Default branch: main
-Last audited main head: `b3b10d6a18e717e92c8bb6818d3d2782a760ae05`
+Last audited main head: `bcf7452f6d652cac17a208f5ded11d0dec9ada38`
 Working branch: none (Phase 2 implementation PRs are merged)
 PR #1 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/1
 PR #2 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/2 (merge commit `b929a9d6384c515c6592ae3ddf7ebe6de1ea5038`)
@@ -14,7 +14,7 @@ PR #5 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/5 (merge com
 ## Current state
 
 - Telegram account-isolation implementation from PR #4 is merged into `main` (merge commit `d5e1931`). PR #5 is also merged into `main` (merge commit `eee2285`), fixing pairing-v2 QR parsing, relay URL metadata normalization, account-sync error classification, and the startup/error presentation.
-- PR #5 CI run 41808417355 passed workflow validation, Serverless/RichMessage contracts, host typecheck, and the root-path production build. Post-merge `main` CI run 41864367356 and TGCloud deployment run 41864367277 both completed successfully. The safe-migration workflow fix also passed main CI run 41872648955 and its production static deployment run 41872648961. The app deployment is successful; the separate production database migration is not.
+- PR #5 CI run 41808417355 passed workflow validation, Serverless/RichMessage contracts, host typecheck, and the root-path production build. Post-merge `main` CI run 41864367356 and TGCloud deployment run 41864367277 both completed successfully. The safe-migration workflow fix also passed main CI run 41872648955 and its production static deployment run 41872648961. The production database migration is verified by successful run 41964142017. The latest account-save compatibility fix is on `main`, passed CI run 41964744036, and deployed to TGCloud by run 41964743837.
 - New backend contract: one `telegram_instances` row per verified Telegram user ID, with `telegram_user_id` as the SQLite primary key and a stable server-generated instance ID. The database contains transport metadata only; it never stores OpenChamber client tokens.
 - New Serverless endpoints: `getMyInstance`, `saveMyInstance`, and `deleteMyInstance`. Each endpoint reads the owner exclusively from verified `ctx.initData.user.id`.
 - The Mini App host namespaces upstream browser storage by verified Telegram account, uses Telegram SecureStorage for per-device client credentials where supported, purges legacy origin-wide keys, forces `credentials: omit` for all active OpenChamber runtime requests (direct and Private Relay), rejects cookie-only login, and waits for account mapping/credential persistence before pairing or login completes.
@@ -38,7 +38,7 @@ PR #5 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/5 (merge com
 - The manual migration workflow uses `npx tgcloud migrate --safe` to satisfy the CLI's non-interactive requirement without auto-approving destructive warnings. Migration run 41964142017 succeeded and confirmed there were no outstanding schema changes. `scripts/validate-github-workflows.mjs` guards against removing `--safe` or replacing it with `--yes`. Deployment instructions include the local `--dry-run` review step.
 - Environment `production` and secret `ACCESS_TOKEN` were shown by the user; allowed deployment branch is `main`. Secret values are not inspected.
 - Before account-isolation rollout, browser upstream persistence stored the issued client token in origin-wide WebView local storage. The account-scoped storage migration intentionally purges those legacy origin-wide keys and does not attribute the old token to a Telegram account.
-- Upstream `mobile.connect.error.authRequired` is a generic pairing/login message used when pairing redemption fails, a response omits a client token, or native secure-token persistence fails. The old host transform also allowed Telegram account-sync failures to fall through the same generic pairing error path. PR #5 separates `[telegram-instance-sync]` failures and shows a dedicated account-save error. It also accepts harmless Private Relay URL query parameters (while rejecting credential-bearing keys), strips fragments, and bounds labels to match pairing-v2 metadata semantics. This explains a plausible source of the reported red message, but a real post-deploy Telegram scan is still required to confirm the user's exact runtime path.
+- The dedicated red message is emitted when pairing/login reaches the host's `[telegram-instance-sync]` barrier, not for a generic QR parse failure. The follow-up audit found a concrete pairing-v2 contract mismatch: upstream retains query parameters on direct HTTP(S) candidates, while the Serverless metadata validator previously rejected every direct query string. `tgcloud/lib/instance-input.js` now accepts harmless direct transport query parameters while continuing to reject credential-bearing query keys. Regression coverage verifies that `?transport=websocket` is retained and `?token=secret` remains rejected. The Vite bridge also surfaces a bounded, safe sync failure detail instead of hiding it behind the generic account-save message. Main CI run 41964744036 and TGCloud deploy run 41964743837 passed; actual Telegram device pairing is still required to confirm whether this was the user's runtime trigger.
 - Earlier npm install reported 10 dependency audit findings (5 low, 4 high, 1 critical). Review advisories before release; do not run `npm audit fix --force`.
 
 ## Upstream maintenance
@@ -50,7 +50,7 @@ PR #5 merged: https://github.com/Yoganataa/openchamber-miniapp/pull/5 (merge com
 
 ## Active phase
 
-Phase 2 — Telegram account isolation, pairing and remote runtime verification. PR #4 and PR #5 are merged; PR #5's main CI and TGCloud deployment succeeded. The account-isolation database migration is applied/verified (run 41964142017). The remaining active blocker is post-redemption Telegram account-metadata persistence, which is being investigated separately. Real QR camera flow, pairing-v2 redemption, Private Relay, and live OpenChamber workflows still require verification on the actual Telegram bot/devices.
+Phase 2 — Telegram account isolation, pairing and remote runtime verification. PR #4 and PR #5 are merged. Production schema is verified in sync (migration run 41964142017). The direct-candidate metadata compatibility fix and improved account-sync diagnostics passed CI (41964744036) and were deployed to TGCloud (41964743837). Real QR camera scan, pairing-v2 redemption, successful account save, Private Relay connectivity, and live OpenChamber workflows still require verification on the actual Telegram bot/devices.
 
 ## Completed implementation
 
@@ -68,8 +68,8 @@ Phase 2 — Telegram account isolation, pairing and remote runtime verification.
 
 1. PR #5 main CI run 41864367356 and TGCloud deployment run 41864367277 passed; the app code is deployed.
 2. [x] Apply and verify the production SQLite migration: run 41964142017 completed successfully; TGCloud reported no schema changes and the database is in sync.
-3. Resolve and retest the post-redemption account-save error. The deployed host error identifies `[telegram-instance-sync]`; a likely metadata mismatch was found where harmless direct transport query parameters were rejected even though upstream pairing parsing preserves them. After this fix is deployed, reload the Mini App and create a fresh **Anywhere** QR because pairing-v2 links are single-use.
-4. Verify the reported pairing error is gone. Confirm that pairing writes one Telegram-owned instance record and a device client token, then that the app loads the official OpenChamber mobile runtime through direct/Private Relay transport.
+3. [x] Fix the direct transport metadata validator mismatch and improve sync diagnostics (main CI 41964744036; TGCloud deployment 41964743837).
+4. Retest on Telegram: reload the Mini App, create a fresh **Anywhere** QR (pairing-v2 links are single-use), then confirm the account-save red message is gone, one Telegram-owned instance record is written, device credentials persist, and the official OpenChamber runtime opens through direct/Private Relay transport.
 5. Test two Telegram accounts in the same Telegram client: the owner's account must restore only its own instance; the second account must see a clean onboarding and must not inherit any server session.
 6. Test two devices on the same Telegram account: the server-side `instance_id` must remain stable while each device uses its own client credential.
 7. Verify Telegram SecureStorage and the compatibility fallback in Telegram clients that do not support it.
