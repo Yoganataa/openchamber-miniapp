@@ -45,7 +45,7 @@ const parseUrl = (value, protocols, { allowQuery = false, preserveTrailingSlash 
 
 const normalizeDirectCandidate = (candidate) => {
   if (!isRecord(candidate) || candidate.kind !== 'direct') return null;
-  const url = parseUrl(candidate.url, ['http:', 'https:']);
+  const url = parseUrl(candidate.url, ['http:', 'https:'], { allowQuery: true });
   return url ? { kind: 'direct', url } : null;
 };
 
