@@ -164,15 +164,25 @@ export function telegramBackButtonPlugin(): Plugin {
           PAIRING_ERROR_MARKER,
           `      console.warn('[mobile-connect] pairing threw', error);
       const telegramSyncFailed = error instanceof Error && error.message.startsWith('[telegram-instance-sync]');
+      const telegramSyncDetail = error instanceof Error
+        ? error.message.replace('[telegram-instance-sync] ', '').trim().slice(0, 180)
+        : '';
       setError(telegramSyncFailed
-        ? 'The connection could not be saved to your Telegram account. Try again. If pairing already completed, create a fresh QR code.'
+        ? telegramSyncDetail
+          ? 'The connection could not be saved to your Telegram account. ' + telegramSyncDetail
+          : 'The connection could not be saved to your Telegram account. Try again. If pairing already completed, create a fresh QR code.'
         : t('mobile.connect.error.authRequired'));`,
         );
         transformed = transformed.replace(
           CONNECT_ERROR_MARKER,
           `const telegramSyncFailed = error instanceof Error && error.message.startsWith('[telegram-instance-sync]');
+      const telegramSyncDetail = error instanceof Error
+        ? error.message.replace('[telegram-instance-sync] ', '').trim().slice(0, 180)
+        : '';
       setError(telegramSyncFailed
-        ? 'The connection could not be saved to your Telegram account. Try again. If pairing already completed, create a fresh QR code.'
+        ? telegramSyncDetail
+          ? 'The connection could not be saved to your Telegram account. ' + telegramSyncDetail
+          : 'The connection could not be saved to your Telegram account. Try again. If pairing already completed, create a fresh QR code.'
         : t(error instanceof MobileHeaderStorageError ? 'mobile.connect.headers.error' : 'mobile.connect.error.invalidUrl'));`,
         );
 
